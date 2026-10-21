@@ -645,6 +645,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     const fechaHoy = new Date().toLocaleDateString('es-ES');
     const textoParteFinal = `[${fechaHoy} | ${dias} Días] - ${document.getElementById("parte").value}`;
     
+    // 1. Preparamos el paquete BÁSICO (Las fotos nuevas van vacías de momento)
     const payload = {
         modo: modoEdicionId ? "editar" : "crear", 
         idRegistro: modoEdicionId,
@@ -657,35 +658,69 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         parte: textoParteFinal,
         usuario: usuarioValidado,
         equipo: equipoValidado,
+        companeros: obtenerCompanerosSeleccionados(),
+        
+        // Datos para Foto 1 (Previa)
         imagenBase64: "",
         mimeType: "",
         nombreArchivo: "",
         imagen_actual_url: document.getElementById("imagen_actual_url").value, 
-        imagen_actual_url2: document.getElementById("imagen_actual_url2").value,
-        companeros: obtenerCompanerosSeleccionados()
+        
+        // Datos para Foto 2 (Posterior)
+        imagen2Base64: "",
+        mimeType2: "",
+        nombreArchivo2: "",
+        imagen_actual_url2: document.getElementById("imagen_actual_url2").value
     };
 
+    // 2. Preparamos el nombre base para los archivos
+    const idLugarSelec = document.getElementById("lugar").value;
+    const clienteObj = datosApp.clientes.find(c => c.id === idLugarSelec);
+    const nombreLugar = clienteObj ? clienteObj.nombre : "Lugar";
+    const lugarNormalizado = nombreLugar.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "_").replace(/_+/g, "_");
+
     const inputImagen = document.getElementById("imagen");
-    if (inputImagen.files.length > 0) {
+    const inputImagen2 = document.getElementById("imagen2");
+
+    // --- LÓGICA EN CASCADA PARA LEER FOTOS ---
+    
+    // Paso final: Enviar al servidor
+    function enviarPeticionFinal() {
+        enviarAlBackend(payload, btnEnviar);
+    }
+
+    // Paso 2: Procesar Foto 2
+    function procesarImagen2() {
+        if (inputImagen2 && inputImagen2.files.length > 0) {
+            const archivo2 = inputImagen2.files[0];
+            const reader2 = new FileReader();
+            reader2.onload = function(evento2) {
+                const nombreOriginalLimpio2 = archivo2.name.replace(/[^a-zA-Z0-9.]/g, "_").replace(/_+/g, "_");
+                payload.imagen2Base64 = evento2.target.result.split(',')[1];
+                payload.mimeType2 = archivo2.type;
+                payload.nombreArchivo2 = "POST_" + lugarNormalizado + "_" + nombreOriginalLimpio2;
+                enviarPeticionFinal(); // Todo leído, ¡A volar!
+            };
+            reader2.readAsDataURL(archivo2);
+        } else {
+            enviarPeticionFinal(); // No hay foto 2, enviamos ya.
+        }
+    }
+
+    // Paso 1: Procesar Foto 1 (Aquí empieza el flujo)
+    if (inputImagen && inputImagen.files.length > 0) {
         const archivo = inputImagen.files[0];
         const reader = new FileReader();
         reader.onload = function(evento) {
-            const idLugarSelec = document.getElementById("lugar").value;
-            const clienteObj = datosApp.clientes.find(c => c.id === idLugarSelec);
-            const nombreLugar = clienteObj ? clienteObj.nombre : "Lugar";
-            const lugarNormalizado = nombreLugar.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "_").replace(/_+/g, "_");
             const nombreOriginalLimpio = archivo.name.replace(/[^a-zA-Z0-9.]/g, "_").replace(/_+/g, "_");
-            
-            payload.imagenBase64 = evento.target.result.split(',')[1]; 
+            payload.imagenBase64 = evento.target.result.split(',')[1];
             payload.mimeType = archivo.type;
-            payload.nombreArchivo = lugarNormalizado + "_" + nombreOriginalLimpio;
-            
-            
-            enviarAlBackend(payload, btnEnviar);
+            payload.nombreArchivo = "PRE_" + lugarNormalizado + "_" + nombreOriginalLimpio;
+            procesarImagen2(); // Foto 1 lista, vamos a por la 2.
         };
         reader.readAsDataURL(archivo);
     } else {
-        enviarAlBackend(payload, btnEnviar);
+        procesarImagen2(); // No hay foto 1, saltamos a revisar la 2.
     }
 });
 
