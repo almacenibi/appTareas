@@ -189,9 +189,12 @@
                         <textarea class="form-control" id="parte" rows="5" placeholder="Escribe aquí los detalles del trabajo realizado..." required></textarea>
                     </div>
 
+                    <!-- ================================== -->
+                    <!-- FOTO 1: PREVIA A LA INTERVENCIÓN   -->
+                    <!-- ================================== -->
                     <div class="mb-4">
                         <label class="form-label fw-bold">
-                            <i class="bi bi-camera"></i> Adjuntar Imagen
+                            <i class="bi bi-camera text-primary"></i> Foto Previa (Antes)
                         </label>
                         
                         <!-- Contenedor mini imagen (Solo visible al editar si ya hay foto) -->
@@ -203,12 +206,36 @@
                                 </button>
                             </div>
                             <input type="hidden" id="imagen_actual_url" value="">
-                            <p class="small text-muted mt-1 mb-0">Imagen actual. Toca la X para reemplazarla.</p>
+                            <p class="small text-muted mt-1 mb-0">Imagen previa actual. Toca la X para borrarla y subir otra.</p>
                         </div>
                         
                         <!-- Input normal para subir foto -->
                         <input type="file" class="form-control" id="imagen" accept="image/*">
-                        <div class="form-text">Se guardará en Drive automáticamente.</div>
+                    </div>
+
+                    <!-- ================================== -->
+                    <!-- FOTO 2: POSTERIOR A LA INTERVENCIÓN-->
+                    <!-- ================================== -->
+                    <div class="mb-4 pt-2 border-top">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-camera-fill text-success"></i> Foto Posterior (Después)
+                        </label>
+                        
+                        <!-- Contenedor mini imagen (Solo visible al editar si ya hay foto) -->
+                        <div id="contenedor_mini_imagen2" class="mb-2" style="display: none;">
+                            <div class="position-relative d-inline-block border rounded p-1">
+                                <img id="mini_imagen_preview2" src="" alt="Imagen Posterior" style="max-height: 80px; max-width: 120px; object-fit: cover; opacity: 0.8;">
+                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle p-0" style="width: 24px; height: 24px;" onclick="quitarImagenPrevia2()" title="Eliminar imagen actual">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                            <input type="hidden" id="imagen_actual_url2" value="">
+                            <p class="small text-muted mt-1 mb-0">Imagen posterior actual. Toca la X para borrarla y subir otra.</p>
+                        </div>
+                        
+                        <!-- Input normal para subir foto -->
+                        <input type="file" class="form-control" id="imagen2" accept="image/*">
+                        <div class="form-text mt-2"><i class="bi bi-cloud-arrow-up"></i> Las fotos se guardarán en Drive automáticamente.</div>
                     </div>
 
                     <!-- AQUÍ IREMOS PONIENDO EL BOTÓN DE ENVIAR Y EL SPINNER DE CARGA AL ENVIAR -->

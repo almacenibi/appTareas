@@ -511,6 +511,37 @@ function prepararEdicion(idTarea, origen = 'list-section') {
         quitarImagenPrevia();
     }
 
+    // ========================================================
+    // Lógica de la SEGUNDA mini-imagen (Posterior / Después)
+    // ========================================================
+    if(tarea.imagen2 && tarea.imagen2.includes("http")) {
+        let urlGuardada2 = tarea.imagen2;
+        let idArchivo2 = "";
+
+        // 1. Extraer el ID de la imagen 2
+        if (urlGuardada2.includes("id=")) {
+            idArchivo2 = urlGuardada2.split("id=")[1].split("&")[0];
+        } else if (urlGuardada2.includes("/file/d/")) {
+            idArchivo2 = urlGuardada2.split("/file/d/")[1].split("/")[0];
+        }
+
+        if (idArchivo2) {
+            // 2. Generamos miniatura
+            let urlMiniatura2 = "https://drive.google.com/thumbnail?id=" + idArchivo2 + "&sz=w400";
+            
+            document.getElementById("contenedor_mini_imagen2").style.display = "block";
+            document.getElementById("mini_imagen_preview2").src = urlMiniatura2;
+            
+            // Mantenemos URL original
+            document.getElementById("imagen_actual_url2").value = urlGuardada2; 
+            document.getElementById("imagen2").style.display = "none"; 
+        } else {
+            quitarImagenPrevia2();
+        }
+    } else {
+        quitarImagenPrevia2();
+    }
+
     // Cambiamos textos para modo edición
     document.querySelector("#form-section .card-title").innerText = "Modificar Parte";
     document.getElementById("btnEnviarParte").innerHTML = '<i class="bi bi-arrow-repeat"></i> Actualizar Parte';
@@ -574,8 +605,17 @@ function accionVolver() {
 function quitarImagenPrevia() {
     document.getElementById("contenedor_mini_imagen").style.display = "none";
     document.getElementById("imagen_actual_url").value = "";
-    document.getElementById("imagen").style.display = "block";
-    document.getElementById("imagen").value = ""; 
+    document.getElementById("mini_imagen_preview").src = "";
+    document.getElementById("imagen").style.display = "block"; // Vuelve a mostrar el botón
+    document.getElementById("imagen").value = "";
+}
+
+function quitarImagenPrevia2() {
+    document.getElementById("contenedor_mini_imagen2").style.display = "none";
+    document.getElementById("imagen_actual_url2").value = "";
+    document.getElementById("mini_imagen_preview2").src = "";
+    document.getElementById("imagen2").style.display = "block"; // Vuelve a mostrar el botón
+    document.getElementById("imagen2").value = "";
 }
 
 function cancelarEdicionYVolver() {
