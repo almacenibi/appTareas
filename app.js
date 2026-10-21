@@ -70,13 +70,18 @@ function rellenarDesplegables() {
     cargarOpciones("filtro_estado", datosApp.estados);
     cargarOpciones("filtro_tipo", datosApp.tipologias);
 
-    // Lógica Admin
-    if (rolValidado === "admin") {
+    // Lógica Admin - V21
+    if (rolValidado && rolValidado.toLowerCase() === "admin") {
         document.getElementById("zonaFiltrosAdmin").classList.remove("opacity-75");
         document.getElementById("filtro_usuario").disabled = false;
         document.getElementById("filtro_equipo").disabled = false;
+        
         cargarOpciones("filtro_usuario", datosApp.usuarios);
         cargarOpciones("filtro_equipo", datosApp.equipos);
+
+        // NUEVO: Decirle a la app que filtre automáticamente cuando el admin cambie estos desplegables
+        document.getElementById("filtro_usuario").addEventListener("change", aplicarFiltrosPrincipales);
+        document.getElementById("filtro_equipo").addEventListener("change", aplicarFiltrosPrincipales);
     }
 
     // --- INICIALIZACIÓN DE LOS BUSCADORES (TomSelect) ---
@@ -239,14 +244,15 @@ function aplicarFiltrosPrincipales() {
 }
 
 // 3. Filtros del Panel Lateral (Ignora el buscador principal)
+// 3. Filtros del Panel Lateral (Ignora el buscador principal) - v21 - Todo el bloque
 function aplicarFiltrosLaterales() {
     const idLugar = document.getElementById("filtro_lugar").value;
     const idEstado = document.getElementById("filtro_estado").value;
     const idTipo = document.getElementById("filtro_tipo").value;
     const fInicio = document.getElementById("filtro_fecha_inicio").value;
     const fFin = document.getElementById("filtro_fecha_fin").value;
-    const idUsuario = document.getElementById("filtro_usuario").value;
-    const idEquipo = document.getElementById("filtro_equipo").value;
+    const idUsuario = document.getElementById("filtro_usuario") ? document.getElementById("filtro_usuario").value : "";
+    const idEquipo = document.getElementById("filtro_equipo") ? document.getElementById("filtro_equipo").value : "";
 
     let tareas = obtenerMisTareasBase();
 
@@ -255,9 +261,17 @@ function aplicarFiltrosLaterales() {
         if (idEstado && t.estado !== idEstado) return false;
         if (idTipo && t.tipo !== idTipo) return false;
         
-        // Filtros Admin
-        if (rolValidado === "admin") {
-            if (idUsuario && t.usuario !== idUsuario) return false;
+        // --- Filtros Admin Mejorados ---
+        if (rolValidado && rolValidado.toLowerCase() === "admin") {
+            
+            // Si el admin filtra por un usuario concreto (Creador o Compañero)
+            if (idUsuario) {
+                const esCreador = t.usuario === idUsuario;
+                const esCompanero = t.companeros && t.companeros.includes(idUsuario);
+                if (!esCreador && !esCompanero) return false; 
+            }
+            
+            // Filtro por equipo
             if (idEquipo && t.equipo !== idEquipo) return false;
         }
 
