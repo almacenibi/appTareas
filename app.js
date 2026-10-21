@@ -661,6 +661,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         mimeType: "",
         nombreArchivo: "",
         imagen_actual_url: document.getElementById("imagen_actual_url").value, 
+        imagen_actual_url2: document.getElementById("imagen_actual_url").value,
         companeros: obtenerCompanerosSeleccionados()
     };
 
