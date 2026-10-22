@@ -1100,9 +1100,9 @@ function inicializarFormularioAdmin() {
         contCompaneros.innerHTML = '';
         let usuarios = datosApp.usuarios || [];
         usuarios.forEach((user, index) => {
-            // Recogemos el equipo. Si tu backend lo manda como 'idequipo' o 'equipo' lo pillará
-            let nombreEq = user.equipo || user.idequipo || 'Sin equipo';
-            // Hacemos el split para quedarnos con lo anterior al primer guión (ej: E4)
+            // ¡AQUÍ ESTÁ LA CLAVE! Usamos user.extra
+            let nombreEq = user.extra || 'Sin equipo';
+            // Hacemos el split para quedarnos con lo anterior al primer guión (ej: E6)
             let eqCorto = nombreEq !== 'Sin equipo' ? nombreEq.split('-')[0] : nombreEq;
             
             contCompaneros.innerHTML += `
@@ -1125,11 +1125,13 @@ function automatizarTextosAdmin() {
     const inputDescripcion = document.getElementById("admin_descripcion_corta");
     const textareaNota = document.getElementById("admin_nota");
 
+    // Memoria para no sobreescribir el texto libre del usuario
+    let ultimoBloqueInicial = "";
+
     const recalcularTextos = () => {
-        let origenValor = inputOrigen.value.trim();
-        let etiquetaOrigen = origenValor; // Por defecto ponemos lo que haya escrito
+        let origenValor = inputOrigen ? inputOrigen.value.trim() : "";
+        let etiquetaOrigen = origenValor; 
         
-        // Buscar la etiqueta (columna C) real en datosApp.origenes
         if (origenValor && datosApp.origenes) {
             let origenObj = datosApp.origenes.find(o => o.nombre === origenValor || o.id === origenValor);
             if (origenObj && origenObj.etiqueta) {
@@ -1137,30 +1139,42 @@ function automatizarTextosAdmin() {
             }
         }
 
-        //let textoOrigen = etiquetaOrigen ? `[${etiquetaOrigen}]` : "";
-        let textoOrigen = etiquetaOrigen ? etiquetaOrigen : "";
+        let textoOrigen = etiquetaOrigen ? etiquetaOrigen : ""; // Ya sin corchetes
         let ubicacionValor = inputUbicacion ? inputUbicacion.value.trim() : "";
         let textoUbicacion = ubicacionValor ? `[${ubicacionValor}]` : "";
 
-        // Unimos Origen y Ubicación con un espacio (si ambos existen)
-        let bloqueInicial = [textoOrigen, textoUbicacion].filter(Boolean).join(" ");
+        let nuevoBloqueInicial = [textoOrigen, textoUbicacion].filter(Boolean).join(" ");
+
+        // Extraemos la parte manual separando por el "|"
+        let textoActual = inputDescripcion.value || "";
+        let parteIzquierda = textoActual.split("|")[0]; 
+
+        let textoManual = parteIzquierda;
+        // Si el texto empieza con nuestras etiquetas automáticas previas, las restamos
+        if (ultimoBloqueInicial && parteIzquierda.startsWith(ultimoBloqueInicial)) {
+            textoManual = parteIzquierda.substring(ultimoBloqueInicial.length);
+        } 
+        
+        textoManual = textoManual.trim();
+        ultimoBloqueInicial = nuevoBloqueInicial; // Actualizamos la memoria
 
         let checksActuaciones = document.querySelectorAll(".check-actuacion:checked");
         let textosChecks = Array.from(checksActuaciones).map(cb => `[x] ${cb.value}`).join(" ");
         
-        let descripcionFinal = bloqueInicial;
+        // Ensamblamos: [Etiquetas] + [Texto Libre] + | + [Checks]
+        let izquierdaFinal = [nuevoBloqueInicial, textoManual].filter(Boolean).join(" ");
+        let descripcionFinal = izquierdaFinal;
+        
         if (textosChecks) {
-            descripcionFinal += descripcionFinal ? ` | ${textosChecks}` : textosChecks;
+            descripcionFinal += ` | ${textosChecks}`;
         }
         
         inputDescripcion.value = descripcionFinal.substring(0, 100); 
 
-        // Formatear Textarea
         let textoTextarea = Array.from(checksActuaciones).map(cb => `[x] ${cb.value}`).join("\n");
-        textareaNota.value = textoTextarea;
+        if (textareaNota) textareaNota.value = textoTextarea;
     };
 
-    // Listeners de actualización en vivo
     if (inputOrigen) inputOrigen.addEventListener("input", recalcularTextos);
     if (inputUbicacion) inputUbicacion.addEventListener("input", recalcularTextos);
     
