@@ -264,7 +264,7 @@
     <!-- 4. PANTALLA: FORMULARIO DE ASIGNACIÓN ADMIN-->
     <!-- ========================================== -->
     <div id="admin-form-section" class="app-section">
-        <h1>¡HOLA, ESTOY AQUÍ!</h1> <!-- Añade esto temporalmente -->
+        
         <!-- Botón Volver -->
         <button type="button" class="btn btn-outline-secondary mb-3 shadow-sm" onclick="navegarA('menu-section')">
             <i class="bi bi-arrow-left"></i> Volver al menú
@@ -276,36 +276,32 @@
                     <i class="bi bi-person-badge"></i> Nueva Asignación de Parte
                 </h4>
                 
-                <form id="formularioAdmin">
+                <form id="formularioAdmin"> <!--v25-->
                     
-                    <!-- BLOQUE EXCLUSIVO: DATOS DE ASIGNACIÓN -->
+                    <!-- BLOQUE EXCLUSIVO: DATOS DE ASIGNACIÓN CON PREDICTORES -->
                     <div class="row bg-warning bg-opacity-10 p-3 rounded mb-4 border border-warning-subtle mx-0">
                         <div class="col-12 col-md-4 mb-3 mb-md-0">
                             <label class="form-label fw-bold small text-warning-emphasis">Origen</label>
-                            <select class="form-select" id="admin_idOrigen" required>
-                                <option value="">Selecciona...</option>
-                            </select>
+                            <input class="form-control" list="listaOrigenes" id="admin_idOrigen" placeholder="Buscar origen..." required autocomplete="off">
+                            <datalist id="listaOrigenes"></datalist>
                         </div>
                         <div class="col-12 col-md-4 mb-3 mb-md-0">
                             <label class="form-label fw-bold small text-warning-emphasis">Solicitante</label>
-                            <select class="form-select" id="admin_idSolicitante">
-                                <option value="">Selecciona...</option>
-                            </select>
+                            <input class="form-control" list="listaSolicitantes" id="admin_idSolicitante" placeholder="Buscar solicitante..." autocomplete="off">
+                            <datalist id="listaSolicitantes"></datalist>
                         </div>
                         <div class="col-12 col-md-4">
-                            <label class="form-label fw-bold small text-warning-emphasis">Asignar a (Técnico)</label>
-                            <select class="form-select border-warning" id="admin_usuario" required>
-                                <option value="">Selecciona usuario...</option>
-                            </select>
+                            <label class="form-label fw-bold small text-warning-emphasis">Asignar a (Equipo)</label>
+                            <input class="form-control border-warning" list="listaEquiposAdmin" id="admin_equipo" placeholder="Buscar equipo..." required autocomplete="off">
+                            <datalist id="listaEquiposAdmin"></datalist>
                         </div>
                     </div>
 
                     <!-- BLOQUE ESTÁNDAR: LUGAR, TIPO Y ESTADO -->
                     <div class="mb-3">
                         <label class="form-label fw-bold">Lugar / Cliente</label>
-                        <select id="admin_lugar" required autocomplete="off">
-                            <option value="">Selecciona o escribe para buscar...</option>
-                        </select>
+                        <input class="form-control" list="listaLugaresAdmin" id="admin_lugar" placeholder="Buscar lugar o cliente..." required autocomplete="off">
+                        <datalist id="listaLugaresAdmin"></datalist>
                     </div>
 
                     <div class="row">
@@ -325,29 +321,28 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Descripción Corta</label>
-                        <input type="text" class="form-control fw-bold text-primary" id="admin_descripcion_corta" maxlength="100" placeholder="Ej: [Origen] [Zona] Texto | [Actuaciones]" required>
-                        <div class="form-text small">Se autocompletará al seleccionar Origen y Actuaciones.</div>
+                        <input type="text" class="form-control fw-bold text-primary" id="admin_descripcion_corta" maxlength="100" placeholder="Ej: [Origen] | [Actuaciones]" required>
                     </div>
 
                     <!-- BLOQUE EXCLUSIVO: INSTRUCCIONES Y ACTUACIONES -->
                     <div class="mb-4 p-3 bg-info bg-opacity-10 rounded border border-info-subtle">
                         <label class="form-label fw-bold text-info-emphasis"><i class="bi bi-ui-checks"></i> Actuaciones Requeridas</label>
                         <div id="admin_contenedor_actuaciones" class="d-flex flex-wrap gap-2 mt-2 mb-3">
-                            <!-- Los checkboxes de la hoja Notas se inyectarán por JS -->
+                            <!-- Checkboxes inyectados por JS -->
                         </div>
 
                         <label class="form-label fw-bold text-info-emphasis"><i class="bi bi-journal-text"></i> Nota / Instrucciones de Expediente</label>
-                        <textarea class="form-control border-info-subtle" id="admin_nota" rows="4" placeholder="Pega aquí los datos del expediente, email, etc..."></textarea>
+                        <textarea class="form-control border-info-subtle" id="admin_nota" rows="4" placeholder="Pega aquí los datos del expediente..."></textarea>
                     </div>
                     
                     <!-- Compañeros de Equipo -->
                     <div class="mb-3 p-3 bg-light rounded border">
-                        <label class="form-label small fw-bold text-muted"><i class="bi bi-people"></i> COMPAÑEROS DE EQUIPO EN ESTE PARTE</label>
+                        <label class="form-label small fw-bold text-muted"><i class="bi bi-people"></i> COMPAÑEROS EN ESTE PARTE</label>
                         <div id="admin_contenedorCompaneros" class="d-flex flex-wrap gap-2 mt-2">
-                            <!-- Los checkboxes se inyectarán por JS -->
+                            <!-- Checkboxes inyectados por JS -->
                         </div>
                     </div>
-
+                    <!--v25-->      
                     <div class="row">
                         <div class="col-6 mb-3">
                             <label class="form-label fw-bold">Fecha Inicio</label>
