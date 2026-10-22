@@ -23,14 +23,19 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // Función que descarga los datos (sirve para inicio y para refrescar tras guardar) --> v24
+// Función que descarga los datos (con interceptores de diagnóstico)
 function cargarDatosDesdeAPI(esCargaInicial = false, tipo = "todo") {
-    const url = API_URL + "?tipo=" + tipo; // Le decimos al backend qué queremos
+    const url = API_URL + "?tipo=" + tipo; 
+    console.log("1. Llamando a la API con URL:", url + "&t=" + new Date().getTime());
     
-    // Corregimos el "?" por un "&" para que la URL no se rompa al añadir la fecha anti-caché
     return fetch(url + "&t=" + new Date().getTime()) 
-        .then(response => response.json())
+        .then(response => {
+            console.log("2. Respuesta del servidor (cruda):", response);
+            return response.json();
+        })
         .then(data => {
-            // Actualizamos solo las variables que nos devuelve el servidor
+            console.warn("3. ¡PAQUETE JSON DESEMPAQUETADO! Mira lo que tiene dentro:", data);
+            
             if(data.clientes) datosApp.clientes = data.clientes;
             if(data.tipologias) datosApp.tipologias = data.tipologias;
             if(data.estados) datosApp.estados = data.estados;
@@ -38,12 +43,17 @@ function cargarDatosDesdeAPI(esCargaInicial = false, tipo = "todo") {
             if(data.usuarios) datosApp.usuarios = data.usuarios;
             if(data.tareas) datosApp.tareas = data.tareas;
             
-            // ¡NUEVAS VARIABLES ADMIN RECOGIDAS DEL EMBUDO!
-            if(data.origenes) datosApp.origenes = data.origenes;
+            // Verificamos si llegan al embudo
+            if(data.origenes) {
+                console.log("✔️ Orígenes encontrados y guardados.");
+                datosApp.origenes = data.origenes;
+            } else {
+                console.error("❌ El JSON ha llegado SIN orígenes.");
+            }
+
             if(data.solicitantes) datosApp.solicitantes = data.solicitantes;
             if(data.notas) datosApp.notas = data.notas;
             
-            //Para que actualize github joder
             if(esCargaInicial) {
                 rellenarDesplegables();
                 configurarFechasPorDefecto();
@@ -51,9 +61,9 @@ function cargarDatosDesdeAPI(esCargaInicial = false, tipo = "todo") {
             }
         })
         .catch(error => {
-            console.error("Error al cargar datos:", error);
+            console.error("Error crítico al cargar datos:", error);
         });
-} //<-- v24
+}
 
 
 //v22 -> revisar que actualice desplegables para admin
