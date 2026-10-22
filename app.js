@@ -161,6 +161,19 @@ document.getElementById("btnLogin").addEventListener("click", function() {
         // ¡AQUÍ ESTÁ LA CLAVE! Re-dibujamos los desplegables ahora que sabemos que es admin
         rellenarDesplegables();
 
+        //<--v24
+        // --- ¡NUEVO! MOSTRAR/OCULTAR BOTÓN ADMIN ---
+        const btnMenuAdmin = document.getElementById("colMenuAdmin");
+        if (btnMenuAdmin) {
+            if (rolValidado.trim().toLowerCase() === "admin") {
+                btnMenuAdmin.classList.remove("d-none");
+            } else {
+                btnMenuAdmin.classList.add("d-none");
+            }
+        }
+        //<--v24
+
+
         navegarA('menu-section');
     } else {
         document.getElementById("loginError").style.display = "block";
