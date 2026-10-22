@@ -1022,6 +1022,13 @@ function inicializarFormularioAdmin() {
     const cargarOpciones = (selectId, lista) => {
         const select = document.getElementById(selectId);
         if(!select) return; 
+        
+        // ¡NUEVO!: Si la lista no existe, la convertimos en un array vacío para que no explote el forEach
+        if (!lista) {
+            console.warn(`Aviso: No se encontraron datos para llenar el desplegable ${selectId}`);
+            lista = [];
+        }
+
         select.innerHTML = '<option value="">Selecciona...</option>'; 
         lista.forEach(item => {
             let opcion = document.createElement("option");
