@@ -101,6 +101,31 @@ function rellenarDesplegables() {
     new TomSelect("#filtro_lugar", { create: false, sortField: { field: "text", direction: "asc" } });
 }
 
+
+// Genera los checks dinámicamente filtrando por el equipo del usuario logueado
+function cargarCompanerosEquipo() {
+    const contenedor = document.getElementById("contenedorCompaneros");
+    contenedor.innerHTML = "";
+    
+    // Buscamos usuarios del mismo equipo, excluyendo al usuario actual
+    const misCompaneros = datosApp.usuarios.filter(u => u.extra === equipoValidado && u.id !== usuarioValidado);
+    
+    if(misCompaneros.length === 0) {
+        contenedor.innerHTML = "<span class='text-muted small'>No hay otros compañeros en tu equipo.</span>";
+        return;
+    }
+
+    misCompaneros.forEach(comp => {
+        const idCheck = "chk_" + comp.id.replace(/[@.]/g, "_");
+        contenedor.innerHTML += `
+            <div class="form-check form-check-inline border rounded px-2 py-1 bg-white shadow-sm mb-0">
+                <input class="form-check-input ms-0 me-2" type="checkbox" id="${idCheck}" value="${comp.id}">
+                <label class="form-check-label small" for="${idCheck}">${comp.nombre}</label>
+            </div>
+        `;
+    });
+}
+
 // Lee qué casillas están marcadas antes de enviar
 function obtenerCompanerosSeleccionados() {
     const checks = document.querySelectorAll("#contenedorCompaneros input[type='checkbox']:checked");
