@@ -43,6 +43,7 @@ function cargarDatosDesdeAPI(esCargaInicial = false, tipo = "todo") {
             if(data.solicitantes) datosApp.solicitantes = data.solicitantes;
             if(data.notas) datosApp.notas = data.notas;
             
+            //Para que actualize github joder
             if(esCargaInicial) {
                 rellenarDesplegables();
                 configurarFechasPorDefecto();
