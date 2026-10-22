@@ -286,10 +286,13 @@ function aplicarFiltrosLaterales() {
                 if (!esCreador && !esCompanero) return false; 
             }
             
-            // Filtro de Equipo
+            /// Filtro por equipo (CON CHIVATO) v23 - #2 cambio
             if (idEquipo !== "") {
                 const selectEqu = String(idEquipo).trim().toLowerCase();
                 const tareaEqu = String(t.equipo).trim().toLowerCase();
+                
+                // Muestra en la consola F12 qué narices está comparando
+                console.log(`🔎 Revisando Tarea ID: ${t.id} | Su equipo es: [${tareaEqu}] | Buscamos: [${selectEqu}]`);
                 
                 if (tareaEqu !== selectEqu) return false;
             }
