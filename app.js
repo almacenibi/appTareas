@@ -154,8 +154,12 @@ document.getElementById("btnLogin").addEventListener("click", function() {
         
         // Inyectamos el rol en la cabecera visual
         document.getElementById("headerRol").innerText = rolValidado;
-        //Cargamos los compañeros
+        
+        // Cargamos los compañeros
         cargarCompanerosEquipo();
+
+        // ¡AQUÍ ESTÁ LA CLAVE! Re-dibujamos los desplegables ahora que sabemos que es admin
+        rellenarDesplegables();
 
         navegarA('menu-section');
     } else {
