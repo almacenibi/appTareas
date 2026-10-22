@@ -1048,7 +1048,7 @@ function inicializarFormularioAdmin() {
         if (!lista) lista = [];
         lista.forEach(item => {
             let opcion = document.createElement("option");
-            opcion.value = item.nombre; // En los datalist mostramos el nombre al buscar
+            opcion.value = item.nombre; 
             datalist.appendChild(opcion);
         });
     };
@@ -1058,7 +1058,7 @@ function inicializarFormularioAdmin() {
     cargarDatalist("listaEquiposAdmin", datosApp.equipos);
     cargarDatalist("listaLugaresAdmin", datosApp.clientes);
 
-    // 2. Cargar Selects normales (Tipo y Estado)
+    // 2. Cargar Selects normales
     const cargarSelect = (selectId, lista) => {
         const select = document.getElementById(selectId);
         if(!select) return;
@@ -1074,34 +1074,39 @@ function inicializarFormularioAdmin() {
     cargarSelect("admin_tipo", datosApp.tipologias);
     cargarSelect("admin_estado", datosApp.estados);
 
-    // 3. Generar Checkboxes de Actuaciones (Col A en valor, Col B en etiqueta)
+    // 3. Actuaciones (Muestra Col A, Tooltip con Col B)
     const contActuaciones = document.getElementById("admin_contenedor_actuaciones");
     if (contActuaciones) {
         contActuaciones.innerHTML = '';
         let notas = datosApp.notas || [];
         notas.forEach((nota, index) => {
             contActuaciones.innerHTML += `
-                <div class="form-check border bg-white px-3 py-2 rounded shadow-sm">
+                <div class="form-check border bg-white px-3 py-2 rounded shadow-sm" title="${nota.nombre}">
                     <input class="form-check-input check-actuacion" type="checkbox" value="${nota.id}" id="admin_nota_${index}">
                     <label class="form-check-label small" for="admin_nota_${index}">
-                        <strong>${nota.id}</strong> - ${nota.nombre}
+                        ${nota.id}
                     </label>
                 </div>
             `;
         });
     }
 
-    // 4. Generar Checkboxes de Compañeros (Nombre | Equipo)
+    // 4. Compañeros (Nombre | Equipo Corto)
     const contCompaneros = document.getElementById("admin_contenedorCompaneros");
     if (contCompaneros) {
         contCompaneros.innerHTML = '';
         let usuarios = datosApp.usuarios || [];
         usuarios.forEach((user, index) => {
+            // Recogemos el equipo. Si tu backend lo manda como 'idequipo' o 'equipo' lo pillará
+            let nombreEq = user.equipo || user.idequipo || 'Sin equipo';
+            // Hacemos el split para quedarnos con lo anterior al primer guión (ej: E4)
+            let eqCorto = nombreEq !== 'Sin equipo' ? nombreEq.split('-')[0] : nombreEq;
+            
             contCompaneros.innerHTML += `
                 <div class="form-check border bg-white px-3 py-1 rounded shadow-sm">
                     <input class="form-check-input check-companero" type="checkbox" value="${user.nombre}" id="admin_comp_${index}">
-                    <label class="form-check-label small" for="admin_comp_${index}">
-                        ${user.nombre} | <span class="text-muted">${user.equipo || 'Sin equipo'}</span>
+                    <label class="form-check-label small" for="admin_comp_${index}" title="${nombreEq}">
+                        ${user.nombre} | <span class="text-muted">${eqCorto}</span>
                     </label>
                 </div>
             `;
@@ -1113,30 +1118,47 @@ function inicializarFormularioAdmin() {
 
 function automatizarTextosAdmin() {
     const inputOrigen = document.getElementById("admin_idOrigen");
+    const inputUbicacion = document.getElementById("admin_ubicacion");
     const inputDescripcion = document.getElementById("admin_descripcion_corta");
     const textareaNota = document.getElementById("admin_nota");
 
     const recalcularTextos = () => {
-        let origenSeleccionado = inputOrigen.value.trim();
-        let checksActuaciones = document.querySelectorAll(".check-actuacion:checked");
+        let origenValor = inputOrigen.value.trim();
+        let etiquetaOrigen = origenValor; // Por defecto ponemos lo que haya escrito
         
-        // Formatear Descripción Corta (Evita anidación reconstruyendo desde cero)
-        let textoOrigen = origenSeleccionado ? `[${origenSeleccionado}]` : "";
+        // Buscar la etiqueta (columna C) real en datosApp.origenes
+        if (origenValor && datosApp.origenes) {
+            let origenObj = datosApp.origenes.find(o => o.nombre === origenValor || o.id === origenValor);
+            if (origenObj && origenObj.etiqueta) {
+                etiquetaOrigen = origenObj.etiqueta;
+            }
+        }
+
+        let textoOrigen = etiquetaOrigen ? `[${etiquetaOrigen}]` : "";
+        let ubicacionValor = inputUbicacion ? inputUbicacion.value.trim() : "";
+        let textoUbicacion = ubicacionValor ? `[${ubicacionValor}]` : "";
+
+        // Unimos Origen y Ubicación con un espacio (si ambos existen)
+        let bloqueInicial = [textoOrigen, textoUbicacion].filter(Boolean).join(" ");
+
+        let checksActuaciones = document.querySelectorAll(".check-actuacion:checked");
         let textosChecks = Array.from(checksActuaciones).map(cb => `[x] ${cb.value}`).join(" ");
         
-        let descripcionFinal = textoOrigen;
+        let descripcionFinal = bloqueInicial;
         if (textosChecks) {
             descripcionFinal += descripcionFinal ? ` | ${textosChecks}` : textosChecks;
         }
-        inputDescripcion.value = descripcionFinal.substring(0, 100); // Límite de 100 caracteres
+        
+        inputDescripcion.value = descripcionFinal.substring(0, 100); 
 
-        // Formatear Textarea (Solo incluye la Columna A de las actuaciones)
+        // Formatear Textarea
         let textoTextarea = Array.from(checksActuaciones).map(cb => `[x] ${cb.value}`).join("\n");
         textareaNota.value = textoTextarea;
     };
 
-    // Escuchar cambios en Origen y en cada Checkbox para recalcular en tiempo real
+    // Listeners de actualización en vivo
     if (inputOrigen) inputOrigen.addEventListener("input", recalcularTextos);
+    if (inputUbicacion) inputUbicacion.addEventListener("input", recalcularTextos);
     
     document.addEventListener("change", function(e) {
         if (e.target && e.target.classList.contains("check-actuacion")) {
