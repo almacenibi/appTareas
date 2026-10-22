@@ -25,10 +25,10 @@ document.addEventListener("DOMContentLoaded", function() {
 // Función que descarga los datos (sirve para inicio y para refrescar tras guardar) --> v24
 // Función que descarga los datos (con interceptores de diagnóstico)
 function cargarDatosDesdeAPI(esCargaInicial = false, tipo = "todo") {
-    const url = API_URL + "?tipo=" + tipo; 
+    const url = API_URL; 
     console.log("1. Llamando a la API con URL:", url + "&t=" + new Date().getTime());
     
-    return fetch(url + "&t=" + new Date().getTime()) 
+    return fetch(url + "?t=" + new Date().getTime()) 
         .then(response => {
             console.log("2. Respuesta del servidor (cruda):", response);
             return response.json();
