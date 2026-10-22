@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // Función que descarga los datos (sirve para inicio y para refrescar tras guardar) --> v24
 // Función que descarga los datos (con interceptores de diagnóstico)
+//Esta tardando en actualizar github
 function cargarDatosDesdeAPI(esCargaInicial = false, tipo = "todo") {
     const url = API_URL; 
     console.log("1. Llamando a la API con URL:", url + "&t=" + new Date().getTime());
