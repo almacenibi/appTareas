@@ -96,6 +96,17 @@
                     <p class="text-muted small mb-0">Ver tus partes anteriores</p>
                 </div>
             </div>
+
+            <!-- NUEVO BOTÓN ADMIN (Oculto por defecto) v24 --> 
+            <div class="col-12 col-md-6 d-none" id="colMenuAdmin">
+                <div class="card shadow-sm menu-card h-100 p-4 text-center border-warning" onclick="abrirFormularioAdmin()">
+                    <i class="bi bi-person-badge fs-1 text-warning mb-3"></i>
+                    <h5 class="fw-bold text-warning">Asignar Parte</h5>
+                    <p class="text-muted small mb-0">Exclusivo Administración</p>
+                </div>
+            </div>
+            <!-- v24-->
+
             <div class="col-12 col-md-6">
                 <div class="card shadow-sm menu-card h-100 p-4 text-center" onclick="navegarA('informes-section')">
                     <i class="bi bi-file-earmark-pdf fs-1 text-danger mb-3"></i>
@@ -247,7 +258,136 @@
         </div>
     </div>
 
-    <!-- 4. PANTALLA: LISTADO DE PARTES -->
+
+    <!-- v14 -->
+    <!-- ========================================== -->
+    <!-- 4. PANTALLA: FORMULARIO DE ASIGNACIÓN ADMIN-->
+    <!-- ========================================== -->
+    <div id="admin-form-section" class="app-section d-none">
+        <!-- Botón Volver -->
+        <button type="button" class="btn btn-outline-secondary mb-3 shadow-sm" onclick="navegarA('menu-section')">
+            <i class="bi bi-arrow-left"></i> Volver al menú
+        </button>
+
+        <div class="card shadow border-warning">
+            <div class="card-body p-4">
+                <h4 class="card-title fw-bold mb-4 border-bottom border-warning pb-2 text-warning-emphasis">
+                    <i class="bi bi-person-badge"></i> Nueva Asignación de Parte
+                </h4>
+                
+                <form id="formularioAdmin">
+                    
+                    <!-- BLOQUE EXCLUSIVO: DATOS DE ASIGNACIÓN -->
+                    <div class="row bg-warning bg-opacity-10 p-3 rounded mb-4 border border-warning-subtle mx-0">
+                        <div class="col-12 col-md-4 mb-3 mb-md-0">
+                            <label class="form-label fw-bold small text-warning-emphasis">Origen</label>
+                            <select class="form-select" id="admin_idOrigen" required>
+                                <option value="">Selecciona...</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4 mb-3 mb-md-0">
+                            <label class="form-label fw-bold small text-warning-emphasis">Solicitante</label>
+                            <select class="form-select" id="admin_idSolicitante">
+                                <option value="">Selecciona...</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold small text-warning-emphasis">Asignar a (Técnico)</label>
+                            <select class="form-select border-warning" id="admin_usuario" required>
+                                <option value="">Selecciona usuario...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- BLOQUE ESTÁNDAR: LUGAR, TIPO Y ESTADO -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Lugar / Cliente</label>
+                        <select id="admin_lugar" required autocomplete="off">
+                            <option value="">Selecciona o escribe para buscar...</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12 col-md-6 mb-3">
+                            <label class="form-label fw-bold">Tipo</label>
+                            <select class="form-select" id="admin_tipo" required>
+                                <option value="">Selecciona...</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6 mb-3">
+                            <label class="form-label fw-bold">Estado</label>
+                            <select class="form-select" id="admin_estado" required>
+                                <option value="">Selecciona...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Descripción Corta</label>
+                        <input type="text" class="form-control fw-bold text-primary" id="admin_descripcion_corta" maxlength="100" placeholder="Ej: [Origen] [Zona] Texto | [Actuaciones]" required>
+                        <div class="form-text small">Se autocompletará al seleccionar Origen y Actuaciones.</div>
+                    </div>
+
+                    <!-- BLOQUE EXCLUSIVO: INSTRUCCIONES Y ACTUACIONES -->
+                    <div class="mb-4 p-3 bg-info bg-opacity-10 rounded border border-info-subtle">
+                        <label class="form-label fw-bold text-info-emphasis"><i class="bi bi-ui-checks"></i> Actuaciones Requeridas</label>
+                        <div id="admin_contenedor_actuaciones" class="d-flex flex-wrap gap-2 mt-2 mb-3">
+                            <!-- Los checkboxes de la hoja Notas se inyectarán por JS -->
+                        </div>
+
+                        <label class="form-label fw-bold text-info-emphasis"><i class="bi bi-journal-text"></i> Nota / Instrucciones de Expediente</label>
+                        <textarea class="form-control border-info-subtle" id="admin_nota" rows="4" placeholder="Pega aquí los datos del expediente, email, etc..."></textarea>
+                    </div>
+                    
+                    <!-- Compañeros de Equipo -->
+                    <div class="mb-3 p-3 bg-light rounded border">
+                        <label class="form-label small fw-bold text-muted"><i class="bi bi-people"></i> COMPAÑEROS DE EQUIPO EN ESTE PARTE</label>
+                        <div id="admin_contenedorCompaneros" class="d-flex flex-wrap gap-2 mt-2">
+                            <!-- Los checkboxes se inyectarán por JS -->
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Fecha Inicio</label>
+                            <input type="date" class="form-control" id="admin_fecha_inicio" required>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Fecha Fin</label>
+                            <input type="date" class="form-control" id="admin_fecha_fin" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" id="admin_label_nuevo_parte">Desarrollo del Parte (Opcional para el Admin)</label>
+                        <textarea class="form-control" id="admin_parte" rows="3" placeholder="Si es necesario, inicia el desarrollo del parte aquí..."></textarea>
+                    </div>
+
+                    <!-- ================================== -->
+                    <!-- FOTOS (Idéntico al original)       -->
+                    <!-- ================================== -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold"><i class="bi bi-camera text-primary"></i> Foto Previa (Antes)</label>
+                        <input type="file" class="form-control" id="admin_imagen" accept="image/*">
+                    </div>
+
+                    <div class="mb-4 pt-2 border-top">
+                        <label class="form-label fw-bold"><i class="bi bi-camera-fill text-success"></i> Foto Posterior (Después)</label>
+                        <input type="file" class="form-control" id="admin_imagen2" accept="image/*">
+                        <div class="form-text mt-2"><i class="bi bi-cloud-arrow-up"></i> Las fotos se guardarán en Drive automáticamente.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold shadow-sm" id="btnEnviarAdmin">
+                        <i class="bi bi-send-plus-fill"></i> Crear y Asignar Parte
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- v14 -->
+
+
+    <!-- 4.1 PANTALLA: LISTADO DE PARTES -->
     <div id="list-section" class="app-section">
         <!-- Botón Volver -->
         <button class="btn btn-outline-secondary mb-3 shadow-sm" onclick="navegarA('menu-section')">

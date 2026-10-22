@@ -509,7 +509,7 @@ function prepararEdicion(idTarea, origen = 'list-section') {
         textoLimpio = textoLimpio.replace(regex, "");
     }
     document.getElementById("parte").value = textoLimpio; 
-    //v14
+    //--> v14
     // Marcar los checks de los compañeros guardados
     document.querySelectorAll("#contenedorCompaneros input[type='checkbox']").forEach(chk => chk.checked = false);
     if (tarea.companeros) {
@@ -998,3 +998,110 @@ function exportarPDF() {
         btn.innerHTML = textoOriginal; // Restauramos el botón
     });
 }
+
+//--> v14
+// ==========================================
+// LÓGICA DEL FORMULARIO DE ASIGNACIÓN (ADMIN)
+// ==========================================
+
+// 1. Inicializa el formulario y los detectores de cambio
+function inicializarFormularioAdmin() {
+    const cargarOpciones = (selectId, lista) => {
+        const select = document.getElementById(selectId);
+        if(!select) return; 
+        select.innerHTML = '<option value="">Selecciona...</option>'; 
+        lista.forEach(item => {
+            let opcion = document.createElement("option");
+            opcion.value = item.id; 
+            opcion.text = item.nombre;
+            select.appendChild(opcion);
+        });
+    };
+
+    // Rellenamos los desplegables con las nuevas variables
+    cargarOpciones("admin_idOrigen", datosApp.origenes);
+    cargarOpciones("admin_idSolicitante", datosApp.solicitantes);
+    cargarOpciones("admin_usuario", datosApp.usuarios);
+    cargarOpciones("admin_lugar", datosApp.clientes);
+    cargarOpciones("admin_tipo", datosApp.tipologias);
+    cargarOpciones("admin_estado", datosApp.estados);
+
+    // Activamos el buscador avanzado TomSelect para el lugar
+    if (document.getElementById("admin_lugar") && !document.getElementById("admin_lugar").tomselect) {
+        new TomSelect("#admin_lugar", { create: false, sortField: { field: "text", direction: "asc" } });
+    }
+
+    // Dibujamos los Checkboxes de Actuaciones desde la hoja "Notas"
+    const contActuaciones = document.getElementById("admin_contenedor_actuaciones");
+    contActuaciones.innerHTML = "";
+    if (datosApp.notas) {
+        datosApp.notas.forEach(nota => {
+            const idCheck = "act_" + nota.id.replace(/\s+/g, "_");
+            contActuaciones.innerHTML += `
+                <div class="form-check form-check-inline border border-info-subtle rounded px-2 py-1 bg-white shadow-sm mb-0">
+                    <input class="form-check-input ms-0 me-2 admin-actuacion-check" type="checkbox" id="${idCheck}" value="${nota.nombre}">
+                    <label class="form-check-label small" for="${idCheck}" title="${nota.explicacion || ''}">${nota.nombre}</label>
+                </div>
+            `;
+        });
+    }
+
+    // Activamos los "escuchadores" para que el texto cambie en vivo
+    document.getElementById("admin_idOrigen").addEventListener("change", automatizarTextosAdmin);
+    document.querySelectorAll(".admin-actuacion-check").forEach(chk => {
+        chk.addEventListener("change", automatizarTextosAdmin);
+    });
+}
+
+// 2. Automatiza la Descripción Corta y la Nota
+function automatizarTextosAdmin() {
+    const inputDesc = document.getElementById("admin_descripcion_corta");
+    const inputNota = document.getElementById("admin_nota");
+    
+    // --- Extraer Etiqueta del Origen ---
+    const idOrigen = document.getElementById("admin_idOrigen").value;
+    const origenObj = datosApp.origenes.find(o => o.id === idOrigen);
+    const etiqueta = origenObj ? `[${origenObj.etiqueta}] ` : "";
+
+    // --- Extraer Actuaciones Marcadas ---
+    const checks = document.querySelectorAll(".admin-actuacion-check:checked");
+    let txtActuacionesDesc = "";
+    let txtActuacionesNota = "";
+    
+    if (checks.length > 0) {
+        // Formato para el título: | [x] Revisar [x] Material
+        txtActuacionesDesc = " | " + Array.from(checks).map(c => `[x] ${c.value}`).join(" ");
+        // Formato para la nota: saltos de línea
+        txtActuacionesNota = Array.from(checks).map(c => `[x] ${c.value}`).join("\n") + "\n\n";
+    }
+
+    // --- Reconstruir Descripción Corta Inteligente ---
+    let descActual = inputDesc.value;
+    // 1. Limpiamos la etiqueta antigua (Ej: quita el "[EM] ")
+    descActual = descActual.replace(/^\[.*?\]\s*/, "");
+    // 2. Limpiamos la cola de actuaciones antigua (Ej: quita desde el " | " hacia la derecha)
+    descActual = descActual.split(" | ")[0]; 
+    // 3. Unimos todo protegiendo el texto libre del centro
+    inputDesc.value = etiqueta + descActual + txtActuacionesDesc;
+
+    // --- Reconstruir Nota Textarea Inteligente ---
+    let notaActual = inputNota.value;
+    // Limpiamos solo las líneas del principio que empiecen por "[x]" para no borrar el texto manual del admin
+    notaActual = notaActual.replace(/^\[x\].*\n?/gm, "").trim();
+    inputNota.value = txtActuacionesNota + notaActual;
+}
+
+
+
+function abrirFormularioAdmin() {
+    inicializarFormularioAdmin();
+    // Limpiamos los campos por si venimos de hacer otro parte antes
+    document.getElementById("formularioAdmin").reset();
+    document.getElementById("admin_descripcion_corta").value = "";
+    document.getElementById("admin_nota").value = "";
+    
+    // Ahora sí, abrimos la pantalla
+    navegarA('admin-form-section');
+}
+
+//<--v14
