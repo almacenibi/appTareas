@@ -269,18 +269,30 @@ function aplicarFiltrosLaterales() {
         if (idEstado && t.estado !== idEstado) return false;
         if (idTipo && t.tipo !== idTipo) return false;
         
-        // --- Filtros Admin Mejorados ---
-        if (rolValidado && rolValidado.toLowerCase() === "admin") {
+        // --- Filtros Admin Mejorados y Blindados --- v23
+        if (rolValidado && rolValidado.trim().toLowerCase() === "admin") {
             
-            // Si el admin filtra por un usuario concreto (Creador o Compañero)
-            if (idUsuario) {
-                const esCreador = t.usuario === idUsuario;
-                const esCompanero = t.companeros && t.companeros.includes(idUsuario);
+            // Filtro de Usuario
+            if (idUsuario !== "") {
+                // Normalizamos ambos lados para que coincidan 100%
+                const selectUsu = String(idUsuario).trim().toLowerCase();
+                const tareaUsu = String(t.usuario).trim().toLowerCase();
+                const tareaComp = t.companeros ? String(t.companeros).trim().toLowerCase() : "";
+                
+                const esCreador = (tareaUsu === selectUsu);
+                const esCompanero = tareaComp.includes(selectUsu);
+                
+                // Si no es ni el creador ni está en la lista de compañeros, lo ocultamos
                 if (!esCreador && !esCompanero) return false; 
             }
             
-            // Filtro por equipo
-            if (idEquipo && t.equipo !== idEquipo) return false;
+            // Filtro de Equipo
+            if (idEquipo !== "") {
+                const selectEqu = String(idEquipo).trim().toLowerCase();
+                const tareaEqu = String(t.equipo).trim().toLowerCase();
+                
+                if (tareaEqu !== selectEqu) return false;
+            }
         }
 
         // Rango de fechas
