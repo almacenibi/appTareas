@@ -269,12 +269,11 @@ function aplicarFiltrosLaterales() {
         if (idEstado && t.estado !== idEstado) return false;
         if (idTipo && t.tipo !== idTipo) return false;
         
-        // --- Filtros Admin Mejorados y Blindados --- v23
+        // --- Filtros Admin Mejorados y Blindados --- v23 - #3
         if (rolValidado && rolValidado.trim().toLowerCase() === "admin") {
             
             // Filtro de Usuario
             if (idUsuario !== "") {
-                // Normalizamos ambos lados para que coincidan 100%
                 const selectUsu = String(idUsuario).trim().toLowerCase();
                 const tareaUsu = String(t.usuario).trim().toLowerCase();
                 const tareaComp = t.companeros ? String(t.companeros).trim().toLowerCase() : "";
@@ -282,19 +281,21 @@ function aplicarFiltrosLaterales() {
                 const esCreador = (tareaUsu === selectUsu);
                 const esCompanero = tareaComp.includes(selectUsu);
                 
-                // Si no es ni el creador ni está en la lista de compañeros, lo ocultamos
                 if (!esCreador && !esCompanero) return false; 
             }
             
-            /// Filtro por equipo (CON CHIVATO) v23 - #2 cambio
+            // Filtro de Equipo (¡NUEVO: Traducción de ID a Nombre!)
             if (idEquipo !== "") {
-                const selectEqu = String(idEquipo).trim().toLowerCase();
+                // 1. Buscamos el equipo en nuestra lista usando el ID (ej: "5")
+                const equipoObj = datosApp.equipos.find(e => String(e.id) === String(idEquipo));
+                
+                // 2. Extraemos su nombre real (ej: "e10-infraestructuras...")
+                const nombreEquipoBuscar = equipoObj ? String(equipoObj.nombre).trim().toLowerCase() : "";
+                
+                // 3. Comparamos el nombre real con lo que hay guardado en la tarea
                 const tareaEqu = String(t.equipo).trim().toLowerCase();
                 
-                // Muestra en la consola F12 qué narices está comparando
-                console.log(`🔎 Revisando Tarea ID: ${t.id} | Su equipo es: [${tareaEqu}] | Buscamos: [${selectEqu}]`);
-                
-                if (tareaEqu !== selectEqu) return false;
+                if (tareaEqu !== nombreEquipoBuscar) return false;
             }
         }
 
