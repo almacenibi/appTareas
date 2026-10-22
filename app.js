@@ -22,11 +22,12 @@ document.addEventListener("DOMContentLoaded", function() {
     cargarDatosDesdeAPI(true); // true = es la primera carga (vamos a login)
 });
 
-// Función que descarga los datos (sirve para inicio y para refrescar tras guardar)
+// Función que descarga los datos (sirve para inicio y para refrescar tras guardar) --> v24
 function cargarDatosDesdeAPI(esCargaInicial = false, tipo = "todo") {
     const url = API_URL + "?tipo=" + tipo; // Le decimos al backend qué queremos
-    //return fetch(url)
-    return fetch(url + "?t=" + new Date().getTime()) 
+    
+    // Corregimos el "?" por un "&" para que la URL no se rompa al añadir la fecha anti-caché
+    return fetch(url + "&t=" + new Date().getTime()) 
         .then(response => response.json())
         .then(data => {
             // Actualizamos solo las variables que nos devuelve el servidor
@@ -37,6 +38,11 @@ function cargarDatosDesdeAPI(esCargaInicial = false, tipo = "todo") {
             if(data.usuarios) datosApp.usuarios = data.usuarios;
             if(data.tareas) datosApp.tareas = data.tareas;
             
+            // ¡NUEVAS VARIABLES ADMIN RECOGIDAS DEL EMBUDO!
+            if(data.origenes) datosApp.origenes = data.origenes;
+            if(data.solicitantes) datosApp.solicitantes = data.solicitantes;
+            if(data.notas) datosApp.notas = data.notas;
+            
             if(esCargaInicial) {
                 rellenarDesplegables();
                 configurarFechasPorDefecto();
@@ -46,7 +52,9 @@ function cargarDatosDesdeAPI(esCargaInicial = false, tipo = "todo") {
         .catch(error => {
             console.error("Error al cargar datos:", error);
         });
-}
+} //<-- v24
+
+
 //v22 -> revisar que actualice desplegables para admin
 function rellenarDesplegables() {
     const cargarOpciones = (selectId, lista) => {
