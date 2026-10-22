@@ -55,6 +55,8 @@ function cargarDatosDesdeAPI(esCargaInicial = false, tipo = "todo") {
             if(data.solicitantes) datosApp.solicitantes = data.solicitantes;
             if(data.notas) datosApp.notas = data.notas;
             
+            if(data.ubicaciones) datosApp.ubicaciones = data.ubicaciones;
+
             if(esCargaInicial) {
                 rellenarDesplegables();
                 configurarFechasPorDefecto();
@@ -1057,6 +1059,7 @@ function inicializarFormularioAdmin() {
     cargarDatalist("listaSolicitantes", datosApp.solicitantes);
     cargarDatalist("listaEquiposAdmin", datosApp.equipos);
     cargarDatalist("listaLugaresAdmin", datosApp.clientes);
+    cargarDatalist("listaUbicacionesAdmin", datosApp.ubicaciones);
 
     // 2. Cargar Selects normales
     const cargarSelect = (selectId, lista) => {
@@ -1134,7 +1137,8 @@ function automatizarTextosAdmin() {
             }
         }
 
-        let textoOrigen = etiquetaOrigen ? `[${etiquetaOrigen}]` : "";
+        //let textoOrigen = etiquetaOrigen ? `[${etiquetaOrigen}]` : "";
+        let textoOrigen = etiquetaOrigen ? etiquetaOrigen : "";
         let ubicacionValor = inputUbicacion ? inputUbicacion.value.trim() : "";
         let textoUbicacion = ubicacionValor ? `[${ubicacionValor}]` : "";
 

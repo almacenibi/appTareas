@@ -307,8 +307,9 @@
                     <!-- NUEVO CAMPO: UBICACIÓN -->
                     <div class="mb-3">
                         <label class="form-label fw-bold">Ubicación</label>
-                        <input type="text" class="form-control" id="admin_ubicacion" placeholder="Ej: Planta baja, primaria, infantil, cocina, acera, sector..." autocomplete="off">
-                        <div class="form-text small">Especifica la zona exacta dentro del Lugar/Cliente.</div>
+                        <input type="text" class="form-control" list="listaUbicacionesAdmin" id="admin_ubicacion" placeholder="Ej: Planta baja, primaria, infantil..." autocomplete="off">
+                        <datalist id="listaUbicacionesAdmin"></datalist>
+                        <div class="form-text small">Especifica la zona exacta o escribe una nueva.</div>
                     </div>
 
                     <div class="row">
