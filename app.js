@@ -46,7 +46,7 @@ function cargarDatosDesdeAPI(esCargaInicial = false, tipo = "todo") {
             console.error("Error al cargar datos:", error);
         });
 }
-
+//v22 -> revisar que actualice desplegables para admin
 function rellenarDesplegables() {
     const cargarOpciones = (selectId, lista) => {
         const select = document.getElementById(selectId);
@@ -70,18 +70,21 @@ function rellenarDesplegables() {
     cargarOpciones("filtro_estado", datosApp.estados);
     cargarOpciones("filtro_tipo", datosApp.tipologias);
 
-    // Lógica Admin - V21
-    if (rolValidado && rolValidado.toLowerCase() === "admin") {
+    // --- CHIVATO PARA LA CONSOLA ---
+    console.log("Comprobando rol para desplegables. Valor exacto de rolValidado:", `"${rolValidado}"`);
+
+    // Lógica Admin blindada (Ignora mayúsculas y espacios invisibles)
+    if (rolValidado && rolValidado.trim().toLowerCase() === "admin") {
         document.getElementById("zonaFiltrosAdmin").classList.remove("opacity-75");
         document.getElementById("filtro_usuario").disabled = false;
         document.getElementById("filtro_equipo").disabled = false;
-        
         cargarOpciones("filtro_usuario", datosApp.usuarios);
         cargarOpciones("filtro_equipo", datosApp.equipos);
-
-        // NUEVO: Decirle a la app que filtre automáticamente cuando el admin cambie estos desplegables
-        document.getElementById("filtro_usuario").addEventListener("change", aplicarFiltrosPrincipales);
-        document.getElementById("filtro_equipo").addEventListener("change", aplicarFiltrosPrincipales);
+    } else {
+        // Nos aseguramos de que si no es admin, se queden bloqueados
+        document.getElementById("zonaFiltrosAdmin").classList.add("opacity-75");
+        document.getElementById("filtro_usuario").disabled = true;
+        document.getElementById("filtro_equipo").disabled = true;
     }
 
     // --- INICIALIZACIÓN DE LOS BUSCADORES (TomSelect) ---
@@ -96,30 +99,6 @@ function rellenarDesplegables() {
         document.getElementById("filtro_lugar").tomselect.destroy();
     }
     new TomSelect("#filtro_lugar", { create: false, sortField: { field: "text", direction: "asc" } });
-}
-
-// Genera los checks dinámicamente filtrando por el equipo del usuario logueado
-function cargarCompanerosEquipo() {
-    const contenedor = document.getElementById("contenedorCompaneros");
-    contenedor.innerHTML = "";
-    
-    // Buscamos usuarios del mismo equipo, excluyendo al usuario actual
-    const misCompaneros = datosApp.usuarios.filter(u => u.extra === equipoValidado && u.id !== usuarioValidado);
-    
-    if(misCompaneros.length === 0) {
-        contenedor.innerHTML = "<span class='text-muted small'>No hay otros compañeros en tu equipo.</span>";
-        return;
-    }
-
-    misCompaneros.forEach(comp => {
-        const idCheck = "chk_" + comp.id.replace(/[@.]/g, "_");
-        contenedor.innerHTML += `
-            <div class="form-check form-check-inline border rounded px-2 py-1 bg-white shadow-sm mb-0">
-                <input class="form-check-input ms-0 me-2" type="checkbox" id="${idCheck}" value="${comp.id}">
-                <label class="form-check-label small" for="${idCheck}">${comp.nombre}</label>
-            </div>
-        `;
-    });
 }
 
 // Lee qué casillas están marcadas antes de enviar
