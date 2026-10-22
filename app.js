@@ -25,7 +25,8 @@ document.addEventListener("DOMContentLoaded", function() {
 // Función que descarga los datos (sirve para inicio y para refrescar tras guardar)
 function cargarDatosDesdeAPI(esCargaInicial = false, tipo = "todo") {
     const url = API_URL + "?tipo=" + tipo; // Le decimos al backend qué queremos
-    return fetch(url) 
+    //return fetch(url)
+    return fetch(url + "?t=" + new Date().getTime()) 
         .then(response => response.json())
         .then(data => {
             // Actualizamos solo las variables que nos devuelve el servidor
