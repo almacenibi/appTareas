@@ -1077,9 +1077,9 @@ function exportarPDF() {
 // LÓGICA DEL FORMULARIO DE ASIGNACIÓN (ADMIN)
 // ==========================================
 
-//v25
+//v25 v27
+
 function inicializarFormularioAdmin() {
-    // 1. Cargar Datalists (Predictores)
     const cargarDatalist = (datalistId, lista) => {
         const datalist = document.getElementById(datalistId);
         if(!datalist) return;
@@ -1098,53 +1098,33 @@ function inicializarFormularioAdmin() {
     cargarDatalist("listaLugaresAdmin", datosApp.clientes);
     cargarDatalist("listaUbicacionesAdmin", datosApp.ubicaciones);
 
-    // 2. Cargar Selects normales
-    const cargarSelect = (selectId, lista) => {
-        const select = document.getElementById(selectId);
-        if(!select) return;
-        select.innerHTML = '<option value="">Selecciona...</option>';
-        if (!lista) lista = [];
-        lista.forEach(item => {
-            let opcion = document.createElement("option");
-            opcion.value = item.id;
-            opcion.text = item.nombre;
-            select.appendChild(opcion);
-        });
-    };
-    cargarSelect("admin_tipo", datosApp.tipologias);
-    cargarSelect("admin_estado", datosApp.estados);
-
-    // 3. Actuaciones (Muestra Col A, Tooltip con Col B)
+    // Actuaciones Requeridas visualizadas como ETIQUETAS (Bootstrap Pills)
     const contActuaciones = document.getElementById("admin_contenedor_actuaciones");
     if (contActuaciones) {
         contActuaciones.innerHTML = '';
         let notas = datosApp.notas || [];
         notas.forEach((nota, index) => {
             contActuaciones.innerHTML += `
-                <div class="form-check border bg-white px-3 py-2 rounded shadow-sm" title="${nota.nombre}">
-                    <input class="form-check-input check-actuacion" type="checkbox" value="${nota.id}" id="admin_nota_${index}">
-                    <label class="form-check-label small" for="admin_nota_${index}">
-                        ${nota.id}
-                    </label>
-                </div>
+                <input type="checkbox" class="btn-check check-actuacion" id="admin_nota_${index}" value="${nota.id}" autocomplete="off">
+                <label class="btn btn-outline-info rounded-pill shadow-sm mb-2 me-2" for="admin_nota_${index}" title="${nota.nombre}">
+                    ${nota.id}
+                </label>
             `;
         });
     }
 
-    // 4. Compañeros (Nombre | Equipo Corto)
+    // Compañeros (Inyectados todos, pero se deshabilitarán según el equipo)
     const contCompaneros = document.getElementById("admin_contenedorCompaneros");
     if (contCompaneros) {
         contCompaneros.innerHTML = '';
         let usuarios = datosApp.usuarios || [];
         usuarios.forEach((user, index) => {
-            // ¡AQUÍ ESTÁ LA CLAVE! Usamos user.extra
             let nombreEq = user.extra || 'Sin equipo';
-            // Hacemos el split para quedarnos con lo anterior al primer guión (ej: E6)
             let eqCorto = nombreEq !== 'Sin equipo' ? nombreEq.split('-')[0] : nombreEq;
             
             contCompaneros.innerHTML += `
-                <div class="form-check border bg-white px-3 py-1 rounded shadow-sm">
-                    <input class="form-check-input check-companero" type="checkbox" value="${user.nombre}" id="admin_comp_${index}">
+                <div class="form-check border bg-white px-3 py-1 rounded shadow-sm contenedor-companero">
+                    <input class="form-check-input check-companero" type="checkbox" value="${user.nombre}" data-equipo="${nombreEq}" id="admin_comp_${index}">
                     <label class="form-check-label small" for="admin_comp_${index}" title="${nombreEq}">
                         ${user.nombre} | <span class="text-muted">${eqCorto}</span>
                     </label>
@@ -1154,15 +1134,45 @@ function inicializarFormularioAdmin() {
     }
 
     automatizarTextosAdmin();
+    configurarFiltroEquipos();
+}
+
+function configurarFiltroEquipos() {
+    const inputEquipo = document.getElementById("admin_equipo");
+    if (!inputEquipo) return;
+
+    const aplicarFiltro = () => {
+        let equipoSeleccionado = inputEquipo.value.trim();
+        
+        // Si no hay equipo seleccionado, cogemos el del Admin logueado por defecto
+        if (!equipoSeleccionado && datosApp.usuarios) {
+            let adminActual = datosApp.usuarios.find(u => u.id === usuarioValidado);
+            equipoSeleccionado = adminActual ? adminActual.extra : "";
+        }
+
+        document.querySelectorAll(".check-companero").forEach(cb => {
+            let eqCompanero = cb.dataset.equipo;
+            let contenedor = cb.closest('.contenedor-companero');
+            
+            if (eqCompanero === equipoSeleccionado || !equipoSeleccionado) {
+                cb.disabled = false;
+                contenedor.classList.remove("opacity-50", "bg-light");
+            } else {
+                cb.disabled = true;
+                cb.checked = false;
+                contenedor.classList.add("opacity-50", "bg-light");
+            }
+        });
+    };
+
+    inputEquipo.addEventListener("input", aplicarFiltro);
+    aplicarFiltro(); // Ejecutar al inicio
 }
 
 function automatizarTextosAdmin() {
     const inputOrigen = document.getElementById("admin_idOrigen");
     const inputUbicacion = document.getElementById("admin_ubicacion");
     const inputDescripcion = document.getElementById("admin_descripcion_corta");
-    const textareaNota = document.getElementById("admin_nota");
-
-    // Memoria para no sobreescribir el texto libre del usuario
     let ultimoBloqueInicial = "";
 
     const recalcularTextos = () => {
@@ -1171,34 +1181,31 @@ function automatizarTextosAdmin() {
         
         if (origenValor && datosApp.origenes) {
             let origenObj = datosApp.origenes.find(o => o.nombre === origenValor || o.id === origenValor);
-            if (origenObj && origenObj.etiqueta) {
-                etiquetaOrigen = origenObj.etiqueta;
-            }
+            if (origenObj && origenObj.etiqueta) etiquetaOrigen = origenObj.etiqueta;
         }
 
-        let textoOrigen = etiquetaOrigen ? etiquetaOrigen : ""; // Ya sin corchetes
+        let textoOrigen = etiquetaOrigen ? `[${etiquetaOrigen}]` : ""; 
         let ubicacionValor = inputUbicacion ? inputUbicacion.value.trim() : "";
         let textoUbicacion = ubicacionValor ? `[${ubicacionValor}]` : "";
 
         let nuevoBloqueInicial = [textoOrigen, textoUbicacion].filter(Boolean).join(" ");
-
-        // Extraemos la parte manual separando por el "|"
+        
+        // Mantener texto manual
         let textoActual = inputDescripcion.value || "";
         let parteIzquierda = textoActual.split("|")[0]; 
-
         let textoManual = parteIzquierda;
-        // Si el texto empieza con nuestras etiquetas automáticas previas, las restamos
+        
         if (ultimoBloqueInicial && parteIzquierda.startsWith(ultimoBloqueInicial)) {
             textoManual = parteIzquierda.substring(ultimoBloqueInicial.length);
         } 
         
         textoManual = textoManual.trim();
-        ultimoBloqueInicial = nuevoBloqueInicial; // Actualizamos la memoria
+        ultimoBloqueInicial = nuevoBloqueInicial;
 
+        // Nuevas etiquetas con corchetes (Actuaciones)
         let checksActuaciones = document.querySelectorAll(".check-actuacion:checked");
-        let textosChecks = Array.from(checksActuaciones).map(cb => `[x] ${cb.value}`).join(" ");
+        let textosChecks = Array.from(checksActuaciones).map(cb => `[${cb.value}]`).join(" ");
         
-        // Ensamblamos: [Etiquetas] + [Texto Libre] + | + [Checks]
         let izquierdaFinal = [nuevoBloqueInicial, textoManual].filter(Boolean).join(" ");
         let descripcionFinal = izquierdaFinal;
         
@@ -1207,21 +1214,16 @@ function automatizarTextosAdmin() {
         }
         
         inputDescripcion.value = descripcionFinal.substring(0, 100); 
-
-        let textoTextarea = Array.from(checksActuaciones).map(cb => `[x] ${cb.value}`).join("\n");
-        if (textareaNota) textareaNota.value = textoTextarea;
     };
 
     if (inputOrigen) inputOrigen.addEventListener("input", recalcularTextos);
     if (inputUbicacion) inputUbicacion.addEventListener("input", recalcularTextos);
-    
     document.addEventListener("change", function(e) {
-        if (e.target && e.target.classList.contains("check-actuacion")) {
-            recalcularTextos();
-        }
+        if (e.target && e.target.classList.contains("check-actuacion")) recalcularTextos();
     });
 }
-//v25
+
+//v25 v27
 
 
 
@@ -1237,3 +1239,42 @@ function abrirFormularioAdmin() {
 }
 
 //<--v14
+
+//-->V27 - Pruebas previas al envío al backend del formulario de admin
+document.getElementById("formularioAdmin").addEventListener("submit", function(e) {
+    e.preventDefault(); // Evita que la página se recargue
+
+    let companerosSeleccionados = Array.from(document.querySelectorAll(".check-companero:checked"));
+    if (companerosSeleccionados.length === 0) {
+        alert("Debes asignar al menos un compañero de equipo al parte.");
+        return; 
+    }
+
+    let nombreUbicacion = document.getElementById("admin_ubicacion").value.trim();
+    let idUbicacionFinal = nombreUbicacion; 
+    if (datosApp.ubicaciones) {
+        let ubicacionObj = datosApp.ubicaciones.find(u => u.nombre === nombreUbicacion);
+        if (ubicacionObj) idUbicacionFinal = ubicacionObj.id; 
+    }
+
+    let etiquetasArray = Array.from(document.querySelectorAll(".check-actuacion:checked")).map(cb => cb.value);
+    let stringEtiquetas = etiquetasArray.join(";");
+    let stringCompaneros = companerosSeleccionados.map(cb => cb.value).join(";");
+
+    let valorInput = document.getElementById("admin_tecnico_estandar") ? document.getElementById("admin_tecnico_estandar").value : "";
+    let usuarioAsignado = valorInput.includes(" - ") ? valorInput.split(" - ")[1].trim() : valorInput.trim();
+
+    const payload = {
+        descripcion_corta: document.getElementById("admin_descripcion_corta").value,
+        fecha_solicitud: document.getElementById("admin_fecha_solicitud").value,
+        idOrigen: idUbicacionFinal, 
+        etiquetas: stringEtiquetas, 
+        companeros: stringCompaneros,
+        usuario: usuarioAsignado,
+        asignadoPor: usuarioValidado 
+    };
+
+    console.warn("📦 SIMULACIÓN DE PAQUETE LISTO PARA ENVIAR:", payload);
+    alert("Simulación correcta. Abre la consola (F12) para ver los datos recolectados.");
+});
+//<-- v27
