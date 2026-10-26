@@ -126,9 +126,12 @@ function rellenarDesplegables() {
     //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
     // Mostrar y rellenar selector si el usuario es Admin
     if (rolValidado === 'admin') {
-        contenedorAdminTecnico.classList.remove("d-none");
+        const contenedorAdminTecnico = document.getElementById("contenedor_admin_selector_tecnico");
+        const selectAdminTecnico = document.getElementById("admin_tecnico_estandar");
         const datalistTecnicos = document.getElementById("listaTecnicosAdmin");
-        datalistTecnicos.innerHTML = ''; // Limpiamos opciones previas
+
+        if (contenedorAdminTecnico) contenedorAdminTecnico.classList.remove("d-none");
+        if (datalistTecnicos) datalistTecnicos.innerHTML = ''; // Limpiamos opciones previas
         
         if (datosApp.usuarios) {
             datosApp.usuarios.forEach(u => {
@@ -141,9 +144,10 @@ function rellenarDesplegables() {
         
         // Lógica para preseleccionar en edición (si existe)
         if (typeof parteActual !== 'undefined' && parteActual.usuario) {
-            // Busca al usuario por su ID para reconstruir el formato "Nombre - ID"
             let userMatch = datosApp.usuarios.find(u => u.id === parteActual.usuario);
-            document.getElementById("admin_tecnico_estandar").value = userMatch ? `${userMatch.nombre} - ${userMatch.id}` : parteActual.usuario;
+            if (selectAdminTecnico) {
+                selectAdminTecnico.value = userMatch ? `${userMatch.nombre} - ${userMatch.id}` : parteActual.usuario;
+            }
         }
     }
     //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
