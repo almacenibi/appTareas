@@ -1098,6 +1098,24 @@ function inicializarFormularioAdmin() {
     cargarDatalist("listaLugaresAdmin", datosApp.clientes);
     cargarDatalist("listaUbicacionesAdmin", datosApp.ubicaciones);
 
+
+    // Cargar Selects normales (Tipo y Estado)
+    const cargarSelect = (selectId, lista) => {
+        const select = document.getElementById(selectId);
+        if(!select) return;
+        select.innerHTML = '<option value="">Selecciona...</option>';
+        if (!lista) lista = [];
+        lista.forEach(item => {
+            let opcion = document.createElement("option");
+            opcion.value = item.id || item.nombre; 
+            opcion.text = item.nombre;
+            select.appendChild(opcion);
+        });
+    };
+    
+    cargarSelect("admin_tipo", datosApp.tipologias);
+    cargarSelect("admin_estado", datosApp.estados);
+
     // Actuaciones Requeridas visualizadas como ETIQUETAS (Bootstrap Pills)
     const contActuaciones = document.getElementById("admin_contenedor_actuaciones");
     if (contActuaciones) {
