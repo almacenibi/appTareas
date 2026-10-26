@@ -93,34 +93,18 @@ function rellenarDesplegables() {
     cargarOpciones("filtro_estado", datosApp.estados);
     cargarOpciones("filtro_tipo", datosApp.tipologias);
 
-<<<<<<< HEAD
     // Lógica Admin - V21
     if (rolValidado && rolValidado.toLowerCase() === "admin") {
-=======
-    // --- CHIVATO PARA LA CONSOLA ---
-    console.log("Comprobando rol para desplegables. Valor exacto de rolValidado:", `"${rolValidado}"`);
-
-    // Lógica Admin blindada (Ignora mayúsculas y espacios invisibles)
-    if (rolValidado && rolValidado.trim().toLowerCase() === "admin") {
->>>>>>> 24acfe0ae86b97cde9a7fbf1fd7e1332812e2141
         document.getElementById("zonaFiltrosAdmin").classList.remove("opacity-75");
         document.getElementById("filtro_usuario").disabled = false;
         document.getElementById("filtro_equipo").disabled = false;
         
         cargarOpciones("filtro_usuario", datosApp.usuarios);
         cargarOpciones("filtro_equipo", datosApp.equipos);
-<<<<<<< HEAD
 
         // NUEVO: Decirle a la app que filtre automáticamente cuando el admin cambie estos desplegables
         document.getElementById("filtro_usuario").addEventListener("change", aplicarFiltrosPrincipales);
         document.getElementById("filtro_equipo").addEventListener("change", aplicarFiltrosPrincipales);
-=======
-    } else {
-        // Nos aseguramos de que si no es admin, se queden bloqueados
-        document.getElementById("zonaFiltrosAdmin").classList.add("opacity-75");
-        document.getElementById("filtro_usuario").disabled = true;
-        document.getElementById("filtro_equipo").disabled = true;
->>>>>>> 24acfe0ae86b97cde9a7fbf1fd7e1332812e2141
     }
 
     // --- INICIALIZACIÓN DE LOS BUSCADORES (TomSelect) ---
