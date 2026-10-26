@@ -122,6 +122,35 @@ function rellenarDesplegables() {
         document.getElementById("filtro_lugar").tomselect.destroy();
     }
     new TomSelect("#filtro_lugar", { create: false, sortField: { field: "text", direction: "asc" } });
+
+    //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
+    // Mostrar y rellenar selector si el usuario es Admin
+    const contenedorAdminTecnico = document.getElementById("contenedor_admin_selector_tecnico");
+    const selectAdminTecnico = document.getElementById("admin_tecnico_estandar");
+
+    if (rolValidado === 'admin') {
+        contenedorAdminTecnico.classList.remove("d-none");
+        selectAdminTecnico.innerHTML = '<option value="">Selecciona técnico...</option>';
+        
+        // Llenamos el select con los usuarios
+        if (datosApp.usuarios) {
+            datosApp.usuarios.forEach(u => {
+                let opt = document.createElement("option");
+                opt.value = u.nombre;
+                opt.text = u.nombre;
+                selectAdminTecnico.appendChild(opt);
+            });
+        }
+        
+        // Si estás editando un parte existente, preselecciona el usuario de ese parte
+        // Asume que tu variable de edición se llama algo como 'parteActual' o 'tareaEditando'
+        if (typeof parteActual !== 'undefined' && parteActual.usuario) {
+            selectAdminTecnico.value = parteActual.usuario;
+        }
+    } else {
+        contenedorAdminTecnico.classList.add("d-none");
+    }
+    //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
 }
 
 
@@ -719,6 +748,18 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     const fechaHoy = new Date().toLocaleDateString('es-ES');
     const textoParteFinal = `[${fechaHoy} | ${dias} Días] - ${document.getElementById("parte").value}`;
     
+    //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
+    // Determinar usuario final y quién asigna
+    let usuarioAsignado = usuarioValidado; // Por defecto, el técnico logueado
+    let adminQueAsigna = ""; // Vacío para técnicos
+
+    if (rolValidado === 'admin') {
+        usuarioAsignado = document.getElementById("admin_tecnico_estandar").value;
+        adminQueAsigna = usuarioValidado; // Guardamos el nombre del admin
+    }
+    //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
+ 
+
     // 1. Preparamos el paquete BÁSICO (Las fotos nuevas van vacías de momento)
     const payload = {
         modo: modoEdicionId ? "editar" : "crear", 
@@ -730,7 +771,9 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         fecha_inicio: document.getElementById("fecha_inicio").value,
         fecha_fin: document.getElementById("fecha_fin").value,
         parte: textoParteFinal,
-        usuario: usuarioValidado,
+        //v26 MODIFICADOS USUARIO Y ASIGNADOPOR
+        usuario: usuarioAsignado,
+        asignadoPor: adminQueAsigna,
         equipo: equipoValidado,
         companeros: obtenerCompanerosSeleccionados(),
         
@@ -855,10 +898,6 @@ function enviarAlBackend(payload, btn) {
 // Eventos para búsqueda instantánea
 document.getElementById("buscadorPartes").addEventListener("input", aplicarFiltrosPrincipales);
 document.getElementById("filtroMes").addEventListener("change", aplicarFiltrosPrincipales);
-
-// ==========================================
-// MÓDULO DE INFORMES
-// ==========================================
 
 // ==========================================
 // MÓDULO DE INFORMES
