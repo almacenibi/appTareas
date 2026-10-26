@@ -125,30 +125,26 @@ function rellenarDesplegables() {
 
     //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
     // Mostrar y rellenar selector si el usuario es Admin
-    const contenedorAdminTecnico = document.getElementById("contenedor_admin_selector_tecnico");
-    const selectAdminTecnico = document.getElementById("admin_tecnico_estandar");
-
     if (rolValidado === 'admin') {
         contenedorAdminTecnico.classList.remove("d-none");
-        selectAdminTecnico.innerHTML = '<option value="">Selecciona técnico...</option>';
+        const datalistTecnicos = document.getElementById("listaTecnicosAdmin");
+        datalistTecnicos.innerHTML = ''; // Limpiamos opciones previas
         
-        // Llenamos el select con los usuarios
         if (datosApp.usuarios) {
             datosApp.usuarios.forEach(u => {
                 let opt = document.createElement("option");
-                opt.value = u.nombre;
-                opt.text = u.nombre;
-                selectAdminTecnico.appendChild(opt);
+                // Formato visual: Aitor Martinez - almacen.ibi@gmail.com
+                opt.value = `${u.nombre} - ${u.id}`;
+                datalistTecnicos.appendChild(opt);
             });
         }
         
-        // Si estás editando un parte existente, preselecciona el usuario de ese parte
-        // Asume que tu variable de edición se llama algo como 'parteActual' o 'tareaEditando'
+        // Lógica para preseleccionar en edición (si existe)
         if (typeof parteActual !== 'undefined' && parteActual.usuario) {
-            selectAdminTecnico.value = parteActual.usuario;
+            // Busca al usuario por su ID para reconstruir el formato "Nombre - ID"
+            let userMatch = datosApp.usuarios.find(u => u.id === parteActual.usuario);
+            document.getElementById("admin_tecnico_estandar").value = userMatch ? `${userMatch.nombre} - ${userMatch.id}` : parteActual.usuario;
         }
-    } else {
-        contenedorAdminTecnico.classList.add("d-none");
     }
     //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
 }
@@ -224,6 +220,10 @@ document.getElementById("btnLogin").addEventListener("click", function() {
             }
         }
         //<--v24
+
+        //v26 separar el email del usuario -->
+
+        //<--v26
 
 
         navegarA('menu-section');
@@ -750,12 +750,20 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     
     //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
     // Determinar usuario final y quién asigna
-    let usuarioAsignado = usuarioValidado; // Por defecto, el técnico logueado
-    let adminQueAsigna = ""; // Vacío para técnicos
+    let usuarioAsignado = usuarioValidado; // Por defecto, el idUsuario logueado
+    let adminQueAsigna = ""; 
 
     if (rolValidado === 'admin') {
-        usuarioAsignado = document.getElementById("admin_tecnico_estandar").value;
-        adminQueAsigna = usuarioValidado; // Guardamos el nombre del admin
+        let valorInput = document.getElementById("admin_tecnico_estandar").value;
+        
+        // Si el texto contiene el guion, extraemos la parte derecha (el email)
+        if (valorInput.includes(" - ")) {
+            usuarioAsignado = valorInput.split(" - ")[1].trim();
+        } else {
+            // Por si acaso el admin escribe el correo directamente a mano
+            usuarioAsignado = valorInput.trim(); 
+        }
+        adminQueAsigna = usuarioValidado; // El correo del admin logueado
     }
     //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
  

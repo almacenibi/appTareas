@@ -252,12 +252,11 @@
 
                     <!--v26 Admin asigna partes-->
                     
-                    <!-- SELECTOR EXCLUSIVO PARA ADMIN: Oculto por defecto -->
+                    <!-- SELECTOR EXCLUSIVO PARA ADMIN -->
                     <div id="contenedor_admin_selector_tecnico" class="mb-3 d-none bg-warning bg-opacity-10 p-3 rounded border border-warning-subtle">
                         <label class="form-label fw-bold text-warning-emphasis">Asignar a (Técnico) - Modo Admin</label>
-                        <select class="form-select border-warning" id="admin_tecnico_estandar">
-                            <option value="">Selecciona técnico...</option>
-                        </select>
+                        <input class="form-control border-warning" list="listaTecnicosAdmin" id="admin_tecnico_estandar" placeholder="Buscar técnico..." autocomplete="off">
+                        <datalist id="listaTecnicosAdmin"></datalist>
                         <div class="form-text small">Estás registrando/editando este parte en nombre de otro usuario.</div>
                     </div>
                     <!--v26 Admin asigna partes-->
