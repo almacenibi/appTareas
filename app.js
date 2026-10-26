@@ -125,11 +125,13 @@ function rellenarDesplegables() {
 
     //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
     // Mostrar y rellenar selector si el usuario es Admin
-    if (rolValidado === 'admin') {
-        const contenedorAdminTecnico = document.getElementById("contenedor_admin_selector_tecnico");
-        const selectAdminTecnico = document.getElementById("admin_tecnico_estandar");
-        const datalistTecnicos = document.getElementById("listaTecnicosAdmin");
+    // 1. Declaramos los elementos FUERA del if para que existan en ambos casos
+    const contenedorAdminTecnico = document.getElementById("contenedor_admin_selector_tecnico");
+    const selectAdminTecnico = document.getElementById("admin_tecnico_estandar");
+    const datalistTecnicos = document.getElementById("listaTecnicosAdmin");
 
+    // 2. Evaluamos la lógica
+    if (rolValidado === 'admin') {
         if (contenedorAdminTecnico) contenedorAdminTecnico.classList.remove("d-none");
         if (datalistTecnicos) datalistTecnicos.innerHTML = ''; // Limpiamos opciones previas
         
@@ -149,6 +151,9 @@ function rellenarDesplegables() {
                 selectAdminTecnico.value = userMatch ? `${userMatch.nombre} - ${userMatch.id}` : parteActual.usuario;
             }
         }
+    } else {
+        // Si NO es admin, nos aseguramos de que el selector se mantenga oculto
+        if (contenedorAdminTecnico) contenedorAdminTecnico.classList.add("d-none");
     }
     //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
 }
