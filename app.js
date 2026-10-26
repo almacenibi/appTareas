@@ -93,21 +93,34 @@ function rellenarDesplegables() {
     cargarOpciones("filtro_estado", datosApp.estados);
     cargarOpciones("filtro_tipo", datosApp.tipologias);
 
+<<<<<<< HEAD
+    // Lógica Admin - V21
+    if (rolValidado && rolValidado.toLowerCase() === "admin") {
+=======
     // --- CHIVATO PARA LA CONSOLA ---
     console.log("Comprobando rol para desplegables. Valor exacto de rolValidado:", `"${rolValidado}"`);
 
     // Lógica Admin blindada (Ignora mayúsculas y espacios invisibles)
     if (rolValidado && rolValidado.trim().toLowerCase() === "admin") {
+>>>>>>> 24acfe0ae86b97cde9a7fbf1fd7e1332812e2141
         document.getElementById("zonaFiltrosAdmin").classList.remove("opacity-75");
         document.getElementById("filtro_usuario").disabled = false;
         document.getElementById("filtro_equipo").disabled = false;
+        
         cargarOpciones("filtro_usuario", datosApp.usuarios);
         cargarOpciones("filtro_equipo", datosApp.equipos);
+<<<<<<< HEAD
+
+        // NUEVO: Decirle a la app que filtre automáticamente cuando el admin cambie estos desplegables
+        document.getElementById("filtro_usuario").addEventListener("change", aplicarFiltrosPrincipales);
+        document.getElementById("filtro_equipo").addEventListener("change", aplicarFiltrosPrincipales);
+=======
     } else {
         // Nos aseguramos de que si no es admin, se queden bloqueados
         document.getElementById("zonaFiltrosAdmin").classList.add("opacity-75");
         document.getElementById("filtro_usuario").disabled = true;
         document.getElementById("filtro_equipo").disabled = true;
+>>>>>>> 24acfe0ae86b97cde9a7fbf1fd7e1332812e2141
     }
 
     // --- INICIALIZACIÓN DE LOS BUSCADORES (TomSelect) ---
@@ -343,34 +356,18 @@ function aplicarFiltrosLaterales() {
         if (idEstado && t.estado !== idEstado) return false;
         if (idTipo && t.tipo !== idTipo) return false;
         
-        // --- Filtros Admin Mejorados y Blindados --- v23 - #3
-        if (rolValidado && rolValidado.trim().toLowerCase() === "admin") {
+        // --- Filtros Admin Mejorados ---
+        if (rolValidado && rolValidado.toLowerCase() === "admin") {
             
-            // Filtro de Usuario
-            if (idUsuario !== "") {
-                const selectUsu = String(idUsuario).trim().toLowerCase();
-                const tareaUsu = String(t.usuario).trim().toLowerCase();
-                const tareaComp = t.companeros ? String(t.companeros).trim().toLowerCase() : "";
-                
-                const esCreador = (tareaUsu === selectUsu);
-                const esCompanero = tareaComp.includes(selectUsu);
-                
+            // Si el admin filtra por un usuario concreto (Creador o Compañero)
+            if (idUsuario) {
+                const esCreador = t.usuario === idUsuario;
+                const esCompanero = t.companeros && t.companeros.includes(idUsuario);
                 if (!esCreador && !esCompanero) return false; 
             }
             
-            // Filtro de Equipo (¡NUEVO: Traducción de ID a Nombre!)
-            if (idEquipo !== "") {
-                // 1. Buscamos el equipo en nuestra lista usando el ID (ej: "5")
-                const equipoObj = datosApp.equipos.find(e => String(e.id) === String(idEquipo));
-                
-                // 2. Extraemos su nombre real (ej: "e10-infraestructuras...")
-                const nombreEquipoBuscar = equipoObj ? String(equipoObj.nombre).trim().toLowerCase() : "";
-                
-                // 3. Comparamos el nombre real con lo que hay guardado en la tarea
-                const tareaEqu = String(t.equipo).trim().toLowerCase();
-                
-                if (tareaEqu !== nombreEquipoBuscar) return false;
-            }
+            // Filtro por equipo
+            if (idEquipo && t.equipo !== idEquipo) return false;
         }
 
         // Rango de fechas
