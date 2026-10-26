@@ -772,7 +772,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
                 const nombreOriginalLimpio2 = archivo2.name.replace(/[^a-zA-Z0-9.]/g, "_").replace(/_+/g, "_");
                 payload.imagen2Base64 = evento2.target.result.split(',')[1];
                 payload.mimeType2 = archivo2.type;
-                payload.nombreArchivo2 = "POST_" + lugarNormalizado + "_" + nombreOriginalLimpio2;
+                payload.nombreArchivo2 = lugarNormalizado + "_" + nombreOriginalLimpio2 + "_POST";
                 enviarPeticionFinal(); // Todo leído, ¡A volar!
             };
             reader2.readAsDataURL(archivo2);
@@ -789,7 +789,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
             const nombreOriginalLimpio = archivo.name.replace(/[^a-zA-Z0-9.]/g, "_").replace(/_+/g, "_");
             payload.imagenBase64 = evento.target.result.split(',')[1];
             payload.mimeType = archivo.type;
-            payload.nombreArchivo = "PRE_" + lugarNormalizado + "_" + nombreOriginalLimpio;
+            payload.nombreArchivo = lugarNormalizado + "_" + nombreOriginalLimpio + "_PRE";
             procesarImagen2(); // Foto 1 lista, vamos a por la 2.
         };
         reader.readAsDataURL(archivo);
