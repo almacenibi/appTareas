@@ -1142,7 +1142,8 @@ function inicializarFormularioAdmin() {
             
             contCompaneros.innerHTML += `
                 <div class="form-check border bg-white px-3 py-1 rounded shadow-sm contenedor-companero">
-                    <input class="form-check-input check-companero" type="checkbox" value="${user.nombre}" data-equipo="${nombreEq}" id="admin_comp_${index}">
+                    <!-- Añadimos data-id para guardar el email en secreto -->
+                    <input class="form-check-input check-companero" type="checkbox" value="${user.nombre}" data-id="${user.id}" data-equipo="${nombreEq}" id="admin_comp_${index}">
                     <label class="form-check-label small" for="admin_comp_${index}" title="${nombreEq}">
                         ${user.nombre} | <span class="text-muted">${eqCorto}</span>
                     </label>
@@ -1202,7 +1203,7 @@ function automatizarTextosAdmin() {
             if (origenObj && origenObj.etiqueta) etiquetaOrigen = origenObj.etiqueta;
         }
 
-        let textoOrigen = etiquetaOrigen ? `[${etiquetaOrigen}]` : ""; 
+        let textoOrigen = etiquetaOrigen ? etiquetaOrigen : ""; 
         let ubicacionValor = inputUbicacion ? inputUbicacion.value.trim() : "";
         let textoUbicacion = ubicacionValor ? `[${ubicacionValor}]` : "";
 
@@ -1260,13 +1261,19 @@ function abrirFormularioAdmin() {
 
 //-->V27 - Pruebas previas al envío al backend del formulario de admin
 document.getElementById("formularioAdmin").addEventListener("submit", function(e) {
-    e.preventDefault(); // Evita que la página se recargue
+    e.preventDefault();
 
-    let companerosSeleccionados = Array.from(document.querySelectorAll(".check-companero:checked"));
-    if (companerosSeleccionados.length === 0) {
+    let nodosCompaneros = Array.from(document.querySelectorAll(".check-companero:checked"));
+    if (nodosCompaneros.length === 0) {
         alert("Debes asignar al menos un compañero de equipo al parte.");
         return; 
     }
+
+    // Recolectar nombres para la columna N (Compañeros)
+    let stringCompaneros = nodosCompaneros.map(cb => cb.value).join(";");
+    
+    // Extraer el correo del primer compañero seleccionado para la columna K (Usuario)
+    let usuarioAsignado = nodosCompaneros[0].getAttribute("data-id");
 
     let nombreUbicacion = document.getElementById("admin_ubicacion").value.trim();
     let idUbicacionFinal = nombreUbicacion; 
@@ -1277,12 +1284,9 @@ document.getElementById("formularioAdmin").addEventListener("submit", function(e
 
     let etiquetasArray = Array.from(document.querySelectorAll(".check-actuacion:checked")).map(cb => cb.value);
     let stringEtiquetas = etiquetasArray.join(";");
-    let stringCompaneros = companerosSeleccionados.map(cb => cb.value).join(";");
-
-    let valorInput = document.getElementById("admin_tecnico_estandar") ? document.getElementById("admin_tecnico_estandar").value : "";
-    let usuarioAsignado = valorInput.includes(" - ") ? valorInput.split(" - ")[1].trim() : valorInput.trim();
 
     const payload = {
+        modo: "crear",
         descripcion_corta: document.getElementById("admin_descripcion_corta").value,
         fecha_solicitud: document.getElementById("admin_fecha_solicitud").value,
         idOrigen: idUbicacionFinal, 
@@ -1292,7 +1296,7 @@ document.getElementById("formularioAdmin").addEventListener("submit", function(e
         asignadoPor: usuarioValidado 
     };
 
-    console.warn("📦 SIMULACIÓN DE PAQUETE LISTO PARA ENVIAR:", payload);
-    alert("Simulación correcta. Abre la consola (F12) para ver los datos recolectados.");
+    console.warn("📦 SIMULACIÓN LISTA:", payload);
+    alert("Revisa la consola. Si el 'usuario' muestra el email y 'companeros' los nombres, ¡estamos listos!");
 });
 //<-- v27
