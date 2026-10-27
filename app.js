@@ -1380,25 +1380,41 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
         nombreArchivo2: img2 ? img2.nombre : ""
     };
 
+    //-> v27.3 comprobación por consola
     try {
-        let respuesta = await fetch(url, { // 'url' es la constante de tu Apps Script
-            method: "POST",
-            body: JSON.stringify(payload)
-        });
-        let resultado = await respuesta.json();
-        
-        if (resultado.estado === "ok") {
-            alert("✅ Parte asignado y guardado correctamente.");
-            document.getElementById("formularioAdmin").reset();
-            navegarA('menu-section'); // Vuelve al menú tras guardar
-        } else {
-            alert("❌ Error al guardar: " + resultado.error);
-        }
-    } catch (error) {
-        alert("❌ Error de conexión al enviar el parte.");
-    } finally {
-        btnSubmit.innerHTML = textoOriginalBtn;
-        btnSubmit.disabled = false;
-    }
+            console.log("Enviando a la URL:", url); // Verifica si la URL existe y es correcta
+            
+            let respuesta = await fetch(url, { 
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+            
+            // 1. Primero leemos la respuesta como texto crudo para evitar que reviente
+            let textoCrudo = await respuesta.text(); 
+            
+            // 2. Intentamos convertirlo a JSON
+            let resultado;
+            try {
+                resultado = JSON.parse(textoCrudo);
+            } catch (parseError) {
+                console.error("❌ El servidor no devolvió JSON. Respuesta del servidor:", textoCrudo);
+                alert("Error interno en el backend. Revisa la consola y las ejecuciones en Apps Script.");
+                return; // Detenemos aquí
+            }
+            
+            if (resultado.estado === "ok") {
+                alert("✅ Parte asignado y guardado correctamente.");
+                document.getElementById("formularioAdmin").reset();
+                navegarA('menu-section'); 
+            } else {
+                alert("❌ Error al guardar: " + resultado.error);
+            }
+        } catch (error) {
+            console.error("❌ Error real de conexión:", error);
+            alert("❌ Error de red o CORS al enviar el parte. Revisa la consola.");
+        } finally {
+            btnSubmit.innerHTML = textoOriginalBtn;
+            btnSubmit.disabled = false;
+        } //<-- v27.3 
 });
 //<--v27.3 - modificado para enviar al backend, si algo falla revisar código
