@@ -1259,7 +1259,8 @@ function abrirFormularioAdmin() {
 
 //<--v14
 
-//-->V27 - Pruebas previas al envío al backend del formulario de admin
+/*Lógica antigua para enviar al backend el formulario admin
+//-->V27 - Pruebas previas al envío al backend del formulario de admin -
 document.getElementById("formularioAdmin").addEventListener("submit", function(e) {
     e.preventDefault();
 
@@ -1299,4 +1300,105 @@ document.getElementById("formularioAdmin").addEventListener("submit", function(e
     console.warn("📦 SIMULACIÓN LISTA:", payload);
     alert("Revisa la consola. Si el 'usuario' muestra el email y 'companeros' los nombres, ¡estamos listos!");
 });
-//<-- v27
+//<-- v27*/
+
+//--> v27.3 lógica para enviar al backend del admin
+document.getElementById("formularioAdmin").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    let nodosCompaneros = Array.from(document.querySelectorAll(".check-companero:checked"));
+    if (nodosCompaneros.length === 0) {
+        alert("Debes asignar al menos un compañero de equipo al parte.");
+        return; 
+    }
+
+    let stringCompaneros = nodosCompaneros.map(cb => cb.value).join(";");
+    let usuarioAsignado = nodosCompaneros[0].getAttribute("data-id");
+
+    let nombreUbicacion = document.getElementById("admin_ubicacion").value.trim();
+    let idUbicacionFinal = nombreUbicacion; 
+    if (datosApp.ubicaciones) {
+        let ubicacionObj = datosApp.ubicaciones.find(u => u.nombre === nombreUbicacion);
+        if (ubicacionObj) idUbicacionFinal = ubicacionObj.id; 
+    }
+
+    let etiquetasArray = Array.from(document.querySelectorAll(".check-actuacion:checked")).map(cb => cb.value);
+    let stringEtiquetas = etiquetasArray.join(";");
+
+    // Función auxiliar para leer imágenes a Base64 (heredada de tu lógica normal)
+    const leerImagenBase64 = (inputId) => {
+        return new Promise((resolve) => {
+            let input = document.getElementById(inputId);
+            if (input && input.files.length > 0) {
+                let reader = new FileReader();
+                reader.onload = () => resolve({
+                    base64: reader.result.split(',')[1],
+                    mime: input.files[0].type,
+                    nombre: input.files[0].name
+                });
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                resolve(null);
+            }
+        });
+    };
+
+    // Leemos ambas fotos
+    let img1 = await leerImagenBase64("admin_imagen");
+    let img2 = await leerImagenBase64("admin_imagen2");
+
+    // Mostramos estado de carga al usuario
+    const btnSubmit = document.getElementById("btnEnviarAdmin");
+    const textoOriginalBtn = btnSubmit.innerHTML;
+    btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando en base de datos...';
+    btnSubmit.disabled = true;
+
+    const payload = {
+        modo: "crear", // Si luego haces el modo editar admin, lo cambias dinámicamente
+        lugar: document.getElementById("admin_lugar").value,
+        tipo: document.getElementById("admin_tipo").value,
+        estado: document.getElementById("admin_estado").value,
+        descripcion_corta: document.getElementById("admin_descripcion_corta").value,
+        nota: document.getElementById("admin_nota").value,
+        parte: document.getElementById("admin_parte").value,
+        fecha_inicio: document.getElementById("admin_fecha_inicio").value,
+        fecha_fin: document.getElementById("admin_fecha_fin").value,
+        fecha_solicitud: document.getElementById("admin_fecha_solicitud").value, // Col T
+        equipo: document.getElementById("admin_equipo").value, 
+        usuario: usuarioAsignado,
+        companeros: stringCompaneros,
+        asignadoPor: usuarioValidado,
+        idOrigen: idUbicacionFinal, // Col Q
+        etiquetas: stringEtiquetas, // Col S
+        
+        // Imágenes
+        imagenBase64: img1 ? img1.base64 : "",
+        mimeType: img1 ? img1.mime : "",
+        nombreArchivo: img1 ? img1.nombre : "",
+        imagen2Base64: img2 ? img2.base64 : "",
+        mimeType2: img2 ? img2.mime : "",
+        nombreArchivo2: img2 ? img2.nombre : ""
+    };
+
+    try {
+        let respuesta = await fetch(url, { // 'url' es la constante de tu Apps Script
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+        let resultado = await respuesta.json();
+        
+        if (resultado.estado === "ok") {
+            alert("✅ Parte asignado y guardado correctamente.");
+            document.getElementById("formularioAdmin").reset();
+            navegarA('menu-section'); // Vuelve al menú tras guardar
+        } else {
+            alert("❌ Error al guardar: " + resultado.error);
+        }
+    } catch (error) {
+        alert("❌ Error de conexión al enviar el parte.");
+    } finally {
+        btnSubmit.innerHTML = textoOriginalBtn;
+        btnSubmit.disabled = false;
+    }
+});
+//<--v27.3 - modificado para enviar al backend, si algo falla revisar código
