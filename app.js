@@ -1391,42 +1391,42 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
 
     //-> v27.3 comprobación por consola
     try {
-            console.log("Enviando a la URL:", url); // Verifica si la URL existe y es correcta
-            
-            let respuesta = await fetch(url + "?t=" + new Date().getTime(), { 
-                method: "POST",
-                headers: {
-                    "Content-Type": "text/plain;charset=utf-8",
-                },
-                body: JSON.stringify(payload)
-            });
-            
-            // 1. Primero leemos la respuesta como texto crudo para evitar que reviente
-            let textoCrudo = await respuesta.text(); 
-            
-            // 2. Intentamos convertirlo a JSON
-            let resultado;
-            try {
-                resultado = JSON.parse(textoCrudo);
-            } catch (parseError) {
-                console.error("❌ El servidor no devolvió JSON. Respuesta del servidor:", textoCrudo);
-                alert("Error interno en el backend. Revisa la consola y las ejecuciones en Apps Script.");
-                return; // Detenemos aquí
-            }
-            
-            if (resultado.estado === "ok") {
-                alert("✅ Parte asignado y guardado correctamente.");
-                document.getElementById("formularioAdmin").reset();
-                navegarA('menu-section'); 
-            } else {
-                alert("❌ Error al guardar: " + resultado.error);
-            }
-        } catch (error) {
-            console.error("❌ Error real de conexión:", error);
-            alert("❌ Error de red o CORS al enviar el parte. Revisa la consola.");
-        } finally {
-            btnSubmit.innerHTML = textoOriginalBtn;
-            btnSubmit.disabled = false;
-        } //<-- v27.3 
+        // 1. DEFINIMOS LA RUTA EXACTA AQUÍ PARA QUE NO HAYA PÉRDIDAS
+        const urlApi = "https://script.google.com/macros/s/AKfycby_FbRuRypDU8nfaPwoXMshpLGDhmqWrz9P88scCfU8tekKe6RHE4hirbkVX5s-5z4g/exec";
+        
+        // 2. HACEMOS EL ENVÍO A ESA RUTA
+        let respuesta = await fetch(urlApi + "?t=" + new Date().getTime(), { 
+            method: "POST",
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8",
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        let textoCrudo = await respuesta.text(); 
+        
+        let resultado;
+        try {
+            resultado = JSON.parse(textoCrudo);
+        } catch (parseError) {
+            console.error("❌ Respuesta del servidor:", textoCrudo);
+            alert("Error interno en el backend. Revisa las ejecuciones en Apps Script.");
+            return;
+        }
+        
+        if (resultado.estado === "ok") {
+            alert("✅ Parte asignado y guardado correctamente.");
+            document.getElementById("formularioAdmin").reset();
+            navegarA('menu-section'); 
+        } else {
+            alert("❌ Error al guardar: " + resultado.error);
+        }
+    } catch (error) {
+        console.error("❌ Error real de conexión:", error);
+        alert("❌ Error de red o CORS al enviar el parte. Revisa la consola.");
+    } finally {
+        btnSubmit.innerHTML = textoOriginalBtn;
+        btnSubmit.disabled = false;
+    } //<-- v27.3 
 });
 //<--v27.3 - modificado para enviar al backend, si algo falla revisar código
