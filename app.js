@@ -775,6 +775,15 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         equipo: equipoValidado,
         companeros: obtenerCompanerosSeleccionados(),
         
+        //v27-->
+        //¡AQUÍ ESTÁ LA CLAVE! 
+        // Añadimos las variables del Admin vacías para que el backend no falle al buscarlas
+        nota: "",
+        idOrigen: "",
+        etiquetas: "",
+        fecha_solicitud: "",
+        //<--
+
         // Datos para Foto 1 (Previa)
         imagenBase64: "",
         mimeType: "",
