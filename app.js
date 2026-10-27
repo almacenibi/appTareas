@@ -1394,9 +1394,10 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
         // 1. DEFINIMOS LA RUTA EXACTA AQUÍ PARA QUE NO HAYA PÉRDIDAS
         const urlApi = "https://script.google.com/macros/s/AKfycby_FbRuRypDU8nfaPwoXMshpLGDhmqWrz9P88scCfU8tekKe6RHE4hirbkVX5s-5z4g/exec";
         
-        // 2. HACEMOS EL ENVÍO A ESA RUTA
-        let respuesta = await fetch(urlApi + "?t=" + new Date().getTime(), { 
+        // 2. HACEMOS EL ENVÍO A ESA RUTA (Sin el ?t=)
+        let respuesta = await fetch(urlApi, { 
             method: "POST",
+            redirect: "follow", // <-- Asegura que el navegador siga a Google si cambia de ruta internamente
             headers: {
                 "Content-Type": "text/plain;charset=utf-8",
             },
