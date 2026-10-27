@@ -1384,8 +1384,11 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
     try {
             console.log("Enviando a la URL:", url); // Verifica si la URL existe y es correcta
             
-            let respuesta = await fetch(url, { 
+            let respuesta = await fetch(url + "?t=" + new Date().getTime(), { 
                 method: "POST",
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8",
+                },
                 body: JSON.stringify(payload)
             });
             
