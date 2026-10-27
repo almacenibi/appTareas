@@ -1105,6 +1105,7 @@ function inicializarFormularioAdmin() {
     cargarDatalist("listaSolicitantes", datosApp.solicitantes);
     cargarDatalist("listaEquiposAdmin", datosApp.equipos);
     cargarDatalist("listaLugaresAdmin", datosApp.clientes);
+    //cargarSelect("admin_lugar", datosApp.clientes); // <-- Añadimos el lugar aquí
     cargarDatalist("listaUbicacionesAdmin", datosApp.ubicaciones);
 
 
@@ -1121,7 +1122,9 @@ function inicializarFormularioAdmin() {
             select.appendChild(opcion);
         });
     };
-    
+
+    // Cargar Selects (guardan el ID en value y muestran el Nombre)
+    cargarSelect("admin_lugar", datosApp.clientes);
     cargarSelect("admin_tipo", datosApp.tipologias);
     cargarSelect("admin_estado", datosApp.estados);
 
