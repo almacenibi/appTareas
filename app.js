@@ -763,19 +763,28 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     }
     */
     //->v28 En el submit de formularioTareas:
-    let companerosTexto = obtenerCompanerosSeleccionados();
+    // --- LÓGICA BLINDADA DE COMPAÑEROS (CREAR Y EDITAR) ---
+    // 1. Recoger lo seleccionado en los checkboxes
+    let seleccionados = obtenerCompanerosSeleccionados(); 
 
-    // Si no es admin (tanto al CREAR como al EDITAR un parte existente),
-    // nos aseguramos de incluir al usuario que realiza la acción en la Columna N
-    if (rolValidado !== 'admin') {
-        let listaComp = companerosTexto ? companerosTexto.split(';').filter(Boolean) : [];
-        
-        if (!listaComp.includes(usuarioValidado)) {
-            listaComp.unshift(usuarioValidado); // Inserta el email del usuario que edita al principio
+    // 2. Convertir en Array limpiando espacios y elementos vacíos
+    let listaComp = seleccionados 
+        ? seleccionados.split(';').map(e => e.trim()).filter(Boolean) 
+        : [];
+
+    // 3. Normalizar el email del usuario logueado (editor/creador actual)
+    let emailEditor = (usuarioValidado || "").trim().toLowerCase();
+
+    // 4. Insertar al usuario editor si no figura ya en la lista
+    if (emailEditor) {
+        let yaIncluido = listaComp.some(e => e.toLowerCase() === emailEditor);
+        if (!yaIncluido) {
+            listaComp.unshift(emailEditor); // Lo añade al principio
         }
-        
-        companerosTexto = listaComp.join(';');
     }
+
+    // 5. Cadena final limpia para la Columna N
+    let companerosTexto = listaComp.join(';');
     //v28 <--
 
     
