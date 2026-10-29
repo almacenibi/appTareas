@@ -745,7 +745,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
 
     //v28 --> Construir las variables para recoger los compañeros aunque seas el propio creador
     // En el submit de formularioTareas:
-    let companerosTexto = obtenerCompanerosSeleccionados();
+    //let companerosTexto = obtenerCompanerosSeleccionados();
     //<--v28
 
     /* Versión anteiror v.24
