@@ -743,10 +743,10 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     let usuarioAsignado = usuarioValidado; // Por defecto, el idUsuario logueado
     let adminQueAsigna = ""; 
 
-    //v25 --> Construir las variables para recoger los compañeros aunque seas el propio creador
+    //v28 --> Construir las variables para recoger los compañeros aunque seas el propio creador
     // En el submit de formularioTareas:
     let companerosTexto = obtenerCompanerosSeleccionados();
-    //<--v25
+    //<--v28
 
     /* Versión anteiror v.24
     if (rolValidado === 'admin') {
@@ -762,7 +762,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         adminQueAsigna = usuarioValidado; // El correo del admin logueado
     }
     */
-    //->v25 En el submit de formularioTareas:
+    //->v28 En el submit de formularioTareas:
     let companerosTexto = obtenerCompanerosSeleccionados();
 
     // Si es un técnico (no admin) creando su propio parte, añadimos su email a la lista si no está
@@ -773,7 +773,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         }
         companerosTexto = listaComp.join(';');
     }
-    //v25 <--
+    //v28 <--
 
     
     //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
@@ -794,7 +794,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         usuario: usuarioAsignado,
         asignadoPor: adminQueAsigna,
         equipo: equipoValidado,
-        companeros: companerosTexto, // Usamos la variable ajustada
+        companeros: companerosTexto, // Usamos la variable ajustada v28
         //companeros: obtenerCompanerosSeleccionados(),
         
         //v27-->
