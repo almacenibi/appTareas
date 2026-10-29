@@ -722,23 +722,41 @@ function prepararEdicion(idTarea, origen = 'list-section') {
     }
     document.getElementById("parte").value = textoLimpio; 
     
-    //--> v14 ACTUALIZADO: RENDERIZADO DINÁMICO SEGÚN EQUIPO DE LA TAREA Y MARCADO
+    //--> v14 ACTUALIZADO CON FILTRO FLEXIBLE (ID / NOMBRE Y MINÚSCULAS)
     const contenedorComp = document.getElementById("contenedorCompaneros");
     if (contenedorComp) {
-        let equipoAmostrar = (rolValidado === 'admin' && tarea.equipo) 
+        // 1. Determinar el valor de equipo base
+        let equipoBase = (rolValidado === 'admin' && tarea.equipo) 
             ? tarea.equipo 
             : equipoValidado;
 
+        let equipoVal = (equipoBase || "").toString().trim().toLowerCase();
+
+        // 2. Buscar si el valor corresponde a un objeto de equipo en datosApp.equipos (para tener tanto ID como Nombre)
+        let equipoObj = (datosApp.equipos || []).find(e => 
+            (e.id || "").toString().trim().toLowerCase() === equipoVal || 
+            (e.nombre || "").toString().trim().toLowerCase() === equipoVal
+        );
+
+        let idEquipoRef = equipoObj ? (equipoObj.id || "").toString().trim().toLowerCase() : equipoVal;
+        let nombreEquipoRef = equipoObj ? (equipoObj.nombre || "").toString().trim().toLowerCase() : equipoVal;
+
+        // 3. Filtrar usuarios comparando tanto por ID de equipo como por Nombre de equipo
+        let usuariosDelEquipo = (datosApp.usuarios || []).filter(u => {
+            let userEq = (u.equipo || "").toString().trim().toLowerCase();
+            return userEq === idEquipoRef || userEq === nombreEquipoRef || userEq === equipoVal;
+        });
+
+        // 4. Extraer compañeros guardados en la Columna N
         const companerosArr = tarea.companeros 
             ? tarea.companeros.split(';').map(c => c.trim().toLowerCase()).filter(Boolean)
             : [];
 
-        let usuariosDelEquipo = (datosApp.usuarios || []).filter(u => u.equipo === equipoAmostrar);
-
+        // 5. Inyectar en el DOM
         contenedorComp.innerHTML = "";
 
         if (usuariosDelEquipo.length === 0) {
-            contenedorComp.innerHTML = `<p class="text-muted small mb-0">No hay integrantes en el equipo "${equipoAmostrar}".</p>`;
+            contenedorComp.innerHTML = `<p class="text-muted small mb-0">No hay integrantes en el equipo "${equipoBase}".</p>`;
         } else {
             usuariosDelEquipo.forEach((user, index) => {
                 let emailUser = (user.id || "").trim().toLowerCase();
