@@ -1203,6 +1203,7 @@ function configurarFiltroEquipos() {
 function automatizarTextosAdmin() {
     const inputOrigen = document.getElementById("admin_idOrigen");
     const inputUbicacion = document.getElementById("admin_ubicacion");
+
     const inputDescripcion = document.getElementById("admin_descripcion_corta");
     let ultimoBloqueInicial = "";
 
@@ -1314,6 +1315,7 @@ document.getElementById("formularioAdmin").addEventListener("submit", function(e
 });
 //<-- v27*/
 
+//**PAYLOADDDDDDDD**//
 //--> v27.3 lógica para enviar al backend del admin
 document.getElementById("formularioAdmin").addEventListener("submit", async function(e) {
     e.preventDefault();
@@ -1359,6 +1361,21 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
     let img1 = await leerImagenBase64("admin_imagen");
     let img2 = await leerImagenBase64("admin_imagen2");
 
+    
+    //-->V27.4.2 -> Añadir datos para recoger el solicitante [optimizar]
+    // 1. Extraer ID del Solicitante
+    let nombreSolicitante = document.getElementById("admin_idSolicitante") ? document.getElementById("admin_idSolicitante").value.trim() : "";
+    let idSolicitanteFinal = nombreSolicitante; // Dejamos lo escrito por si es un nuevo valor
+
+    if (datosApp.solicitantes) {
+        let solicitanteObj = datosApp.solicitantes.find(s => s.nombre === nombreSolicitante || s.id === nombreSolicitante);
+        if (solicitanteObj) {
+            idSolicitanteFinal = solicitanteObj.id; // Convertimos a ID
+        }
+    }
+    //<-- V27.4.2
+
+    
     // Mostramos estado de carga al usuario
     const btnSubmit = document.getElementById("btnEnviarAdmin");
     const textoOriginalBtn = btnSubmit.innerHTML;
@@ -1380,8 +1397,9 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
         usuario: usuarioAsignado,
         companeros: stringCompaneros,
         asignadoPor: usuarioValidado,
-        idOrigen: idUbicacionFinal, // Col Q
-        etiquetas: stringEtiquetas, // Col S
+        idOrigen: idUbicacionFinal, // Col Q (17)
+        idSolicitante: idSolicitanteFinal,  // Col R (18) v27.4.2 -> <-- ¡AÑADIR ESTE CAMPO!
+        etiquetas: stringEtiquetas, // Col S (19)
         
         // Imágenes
         imagenBase64: img1 ? img1.base64 : "",
