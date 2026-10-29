@@ -743,6 +743,12 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     let usuarioAsignado = usuarioValidado; // Por defecto, el idUsuario logueado
     let adminQueAsigna = ""; 
 
+    //v25 --> Construir las variables para recoger los compañeros aunque seas el propio creador
+    // En el submit de formularioTareas:
+    let companerosTexto = obtenerCompanerosSeleccionados();
+    //<--v25
+
+    /* Versión anteiror v.24
     if (rolValidado === 'admin') {
         let valorInput = document.getElementById("admin_tecnico_estandar").value;
         
@@ -755,6 +761,21 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         }
         adminQueAsigna = usuarioValidado; // El correo del admin logueado
     }
+    */
+    //->v25 En el submit de formularioTareas:
+    let companerosTexto = obtenerCompanerosSeleccionados();
+
+    // Si es un técnico (no admin) creando su propio parte, añadimos su email a la lista si no está
+    if (rolValidado !== 'admin') {
+        let listaComp = companerosTexto ? companerosTexto.split(';').filter(Boolean) : [];
+        if (!listaComp.includes(usuarioValidado)) {
+            listaComp.unshift(usuarioValidado); // Lo inserta al inicio
+        }
+        companerosTexto = listaComp.join(';');
+    }
+    //v25 <--
+
+    
     //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
  
 
@@ -773,7 +794,8 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         usuario: usuarioAsignado,
         asignadoPor: adminQueAsigna,
         equipo: equipoValidado,
-        companeros: obtenerCompanerosSeleccionados(),
+        companeros: companerosTexto, // Usamos la variable ajustada
+        //companeros: obtenerCompanerosSeleccionados(),
         
         //v27-->
         //¡AQUÍ ESTÁ LA CLAVE! 
@@ -1152,10 +1174,20 @@ function inicializarFormularioAdmin() {
             let nombreEq = user.extra || 'Sin equipo';
             let eqCorto = nombreEq !== 'Sin equipo' ? nombreEq.split('-')[0] : nombreEq;
             
-            contCompaneros.innerHTML += `
+            /*-> versión antigua sin capturar el idcontCompaneros.innerHTML += `
                 <div class="form-check border bg-white px-3 py-1 rounded shadow-sm contenedor-companero">
                     <!-- Añadimos data-id para guardar el email en secreto -->
                     <input class="form-check-input check-companero" type="checkbox" value="${user.nombre}" data-id="${user.id}" data-equipo="${nombreEq}" id="admin_comp_${index}">
+                    <label class="form-check-label small" for="admin_comp_${index}" title="${nombreEq}">
+                        ${user.nombre} | <span class="text-muted">${eqCorto}</span>
+                    </label>
+                </div>
+            `;<-- Versión antigua*/
+            // En inicializarFormularioAdmin():
+            contCompaneros.innerHTML += `
+                <div class="form-check border bg-white px-3 py-1 rounded shadow-sm contenedor-companero">
+                    <!-- Establecemos el value con user.id (email) -->
+                    <input class="form-check-input check-companero" type="checkbox" value="${user.id}" data-nombre="${user.nombre}" data-equipo="${nombreEq}" id="admin_comp_${index}">
                     <label class="form-check-label small" for="admin_comp_${index}" title="${nombreEq}">
                         ${user.nombre} | <span class="text-muted">${eqCorto}</span>
                     </label>
@@ -1320,6 +1352,7 @@ document.getElementById("formularioAdmin").addEventListener("submit", function(e
 document.getElementById("formularioAdmin").addEventListener("submit", async function(e) {
     e.preventDefault();
 
+    /* Versión antigua de captura del id
     let nodosCompaneros = Array.from(document.querySelectorAll(".check-companero:checked"));
     if (nodosCompaneros.length === 0) {
         alert("Debes asignar al menos un compañero de equipo al parte.");
@@ -1328,6 +1361,19 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
 
     let stringCompaneros = nodosCompaneros.map(cb => cb.value).join(";");
     let usuarioAsignado = nodosCompaneros[0].getAttribute("data-id");
+    */
+
+    // En el submit de formularioAdmin:
+    let nodosCompaneros = Array.from(document.querySelectorAll(".check-companero:checked"));
+    if (nodosCompaneros.length === 0) {
+        alert("Debes asignar al menos un compañero de equipo al parte.");
+        return; 
+    }
+
+    // Extrae directamente los emails (user.id)
+    let stringCompaneros = nodosCompaneros.map(cb => cb.value).join(";");
+    let usuarioAsignado = nodosCompaneros[0].value; // El primer email como técnico principal
+
 
     let nombreUbicacion = document.getElementById("admin_ubicacion").value.trim();
     let idUbicacionFinal = nombreUbicacion; 
