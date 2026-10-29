@@ -765,12 +765,15 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     //->v28 En el submit de formularioTareas:
     let companerosTexto = obtenerCompanerosSeleccionados();
 
-    // Si es un técnico (no admin) creando su propio parte, añadimos su email a la lista si no está
+    // Si no es admin (tanto al CREAR como al EDITAR un parte existente),
+    // nos aseguramos de incluir al usuario que realiza la acción en la Columna N
     if (rolValidado !== 'admin') {
         let listaComp = companerosTexto ? companerosTexto.split(';').filter(Boolean) : [];
+        
         if (!listaComp.includes(usuarioValidado)) {
-            listaComp.unshift(usuarioValidado); // Lo inserta al inicio
+            listaComp.unshift(usuarioValidado); // Inserta el email del usuario que edita al principio
         }
+        
         companerosTexto = listaComp.join(';');
     }
     //v28 <--
