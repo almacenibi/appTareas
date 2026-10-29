@@ -542,6 +542,7 @@ function renderizarTareas(listaTareas) {
         contenedor.innerHTML = htmlLista;
     }
 
+/* -->v28 antigua función
 function prepararEdicion(idTarea, origen = 'list-section') {
     origenNavegacion = origen; // <--- AÑADE ESTA LÍNEA AQUÍ v17
     const tarea = datosApp.tareas.find(t => t.id === idTarea);
@@ -564,15 +565,57 @@ function prepararEdicion(idTarea, origen = 'list-section') {
         textoLimpio = textoLimpio.replace(regex, "");
     }
     document.getElementById("parte").value = textoLimpio; 
-    //--> v14
-    // Marcar los checks de los compañeros guardados
-    document.querySelectorAll("#contenedorCompaneros input[type='checkbox']").forEach(chk => chk.checked = false);
-    if (tarea.companeros) {
-        const companerosArr = tarea.companeros.split(';');
-        document.querySelectorAll("#contenedorCompaneros input[type='checkbox']").forEach(chk => {
-            if (companerosArr.includes(chk.value)) chk.checked = true;
-        });
+    
+    
+    //--> v14 -->v29
+    //--> v14 ACTUALIZADO: Carga dinámica del equipo de la tarea y marcado de checks
+    const contenedorComp = document.getElementById("contenedorCompaneros");
+    if (contenedorComp) {
+        // 1. Determinar qué equipo renderizar:
+        // Si el usuario es admin y la tarea tiene equipo asignado, se cargan los compañeros de ESE equipo.
+        // Si no es admin, se cargan los de su equipo habitual.
+        let equipoAmostrar = (rolValidado === 'admin' && tarea.equipo) 
+            ? tarea.equipo 
+            : equipoValidado;
+
+        // 2. Extraer el listado de emails guardados en la Columna N
+        const companerosArr = tarea.companeros 
+            ? tarea.companeros.split(';').map(c => c.trim().toLowerCase()).filter(Boolean)
+            : [];
+
+        // 3. Obtener los usuarios registrados que pertenecen al equipo objetivo
+        let usuariosDelEquipo = (datosApp.usuarios || []).filter(u => u.equipo === equipoAmostrar);
+
+        // 4. Limpiar e inyectar dinámicamente los checkboxes en el DOM
+        contenedorComp.innerHTML = "";
+
+        if (usuariosDelEquipo.length === 0) {
+            contenedorComp.innerHTML = `<p class="text-muted small mb-0">No hay integrantes en el equipo "${equipoAmostrar}".</p>`;
+        } else {
+            usuariosDelEquipo.forEach((user, index) => {
+                let emailUser = (user.id || "").trim().toLowerCase();
+                let estaMarcado = companerosArr.includes(emailUser);
+
+                contenedorComp.innerHTML += `
+                    <div class="form-check border bg-white px-3 py-1 rounded shadow-sm contenedor-companero">
+                        <input class="form-check-input check-companero" 
+                               type="checkbox" 
+                               value="${user.id}" 
+                               data-nombre="${user.nombre}" 
+                               id="edit_comp_${index}" 
+                               ${estaMarcado ? 'checked' : ''}>
+                        <label class="form-check-label small" for="edit_comp_${index}">
+                            ${user.nombre} <span class="text-muted">(${user.equipo})</span>
+                        </label>
+                    </div>
+                `;
+            });
+        }
     }
+    //--> v14 <--v29
+
+
+
     //Manipular imagen para mostrar
     // Lógica de la mini-imagen con parche para URLs antiguas
     // Lógica de la mini-imagen (Extraemos el ID y usamos el visor de miniaturas de Google)
@@ -654,6 +697,134 @@ function prepararEdicion(idTarea, origen = 'list-section') {
     navegarA('form-section');
 
 }
+<--v28 antigua función*/
+
+//-->v28 nueva función preparación edición
+function prepararEdicion(idTarea, origen = 'list-section') {
+    origenNavegacion = origen;
+    const tarea = datosApp.tareas.find(t => t.id === idTarea);
+    if(!tarea) return;
+
+    modoEdicionId = tarea.id;
+
+    document.getElementById("lugar").tomselect.setValue(tarea.lugar);
+    document.getElementById("tipo").value = tarea.tipo;
+    document.getElementById("estado").value = tarea.estado;
+    document.getElementById("descripcion_corta").value = tarea.descripcion_corta;
+    
+    document.getElementById("fecha_inicio").value = convertirAFechaInput(tarea.fecha_inicio);
+    document.getElementById("fecha_fin").value = convertirAFechaInput(tarea.fecha_fin);
+
+    let textoLimpio = tarea.parte;
+    const regex = /^\[.*?\] - /;
+    if(regex.test(textoLimpio)) {
+        textoLimpio = textoLimpio.replace(regex, "");
+    }
+    document.getElementById("parte").value = textoLimpio; 
+    
+    //--> v14 ACTUALIZADO: RENDERIZADO DINÁMICO SEGÚN EQUIPO DE LA TAREA Y MARCADO
+    const contenedorComp = document.getElementById("contenedorCompaneros");
+    if (contenedorComp) {
+        let equipoAmostrar = (rolValidado === 'admin' && tarea.equipo) 
+            ? tarea.equipo 
+            : equipoValidado;
+
+        const companerosArr = tarea.companeros 
+            ? tarea.companeros.split(';').map(c => c.trim().toLowerCase()).filter(Boolean)
+            : [];
+
+        let usuariosDelEquipo = (datosApp.usuarios || []).filter(u => u.equipo === equipoAmostrar);
+
+        contenedorComp.innerHTML = "";
+
+        if (usuariosDelEquipo.length === 0) {
+            contenedorComp.innerHTML = `<p class="text-muted small mb-0">No hay integrantes en el equipo "${equipoAmostrar}".</p>`;
+        } else {
+            usuariosDelEquipo.forEach((user, index) => {
+                let emailUser = (user.id || "").trim().toLowerCase();
+                let estaMarcado = companerosArr.includes(emailUser);
+
+                contenedorComp.innerHTML += `
+                    <div class="form-check border bg-white px-3 py-1 rounded shadow-sm contenedor-companero">
+                        <input class="form-check-input check-companero" 
+                               type="checkbox" 
+                               value="${user.id}" 
+                               data-nombre="${user.nombre}" 
+                               id="edit_comp_${index}" 
+                               ${estaMarcado ? 'checked' : ''}>
+                        <label class="form-check-label small" for="edit_comp_${index}">
+                            ${user.nombre} <span class="text-muted">(${user.equipo})</span>
+                        </label>
+                    </div>
+                `;
+            });
+        }
+    }
+
+    // Miniaturas de imágenes
+    if(tarea.imagen && tarea.imagen.includes("http")) {
+        let urlGuardada = tarea.imagen;
+        let idArchivo = "";
+
+        if (urlGuardada.includes("id=")) {
+            idArchivo = urlGuardada.split("id=")[1].split("&")[0];
+        } else if (urlGuardada.includes("/file/d/")) {
+            idArchivo = urlGuardada.split("/file/d/")[1].split("/")[0];
+        }
+
+        if (idArchivo) {
+            let urlMiniatura = "https://drive.google.com/thumbnail?id=" + idArchivo + "&sz=w400";
+            document.getElementById("contenedor_mini_imagen").style.display = "block";
+            document.getElementById("mini_imagen_preview").src = urlMiniatura;
+            document.getElementById("imagen_actual_url").value = urlGuardada; 
+            document.getElementById("imagen").style.display = "none"; 
+        } else {
+            quitarImagenPrevia();
+        }
+    } else {
+        quitarImagenPrevia();
+    }
+
+    if(tarea.imagen2 && tarea.imagen2.includes("http")) {
+        let urlGuardada2 = tarea.imagen2;
+        let idArchivo2 = "";
+
+        if (urlGuardada2.includes("id=")) {
+            idArchivo2 = urlGuardada2.split("id=")[1].split("&")[0];
+        } else if (urlGuardada2.includes("/file/d/")) {
+            idArchivo2 = urlGuardada2.split("/file/d/")[1].split("/")[0];
+        }
+
+        if (idArchivo2) {
+            let urlMiniatura2 = "https://drive.google.com/thumbnail?id=" + idArchivo2 + "&sz=w400";
+            document.getElementById("contenedor_mini_imagen2").style.display = "block";
+            document.getElementById("mini_imagen_preview2").src = urlMiniatura2;
+            document.getElementById("imagen_actual_url2").value = urlGuardada2; 
+            document.getElementById("imagen2").style.display = "none"; 
+        } else {
+            quitarImagenPrevia2();
+        }
+    } else {
+        quitarImagenPrevia2();
+    }
+
+    document.querySelector("#form-section .card-title").innerText = "Modificar Parte";
+    document.getElementById("btnEnviarParte").innerHTML = '<i class="bi bi-arrow-repeat"></i> Actualizar Parte';
+    
+    const btnVolver = document.querySelector("#form-section .btn-outline-secondary");
+    if (btnVolver) {
+        if (origen === 'informes-section') {
+            btnVolver.innerHTML = '<i class="bi bi-arrow-left"></i> Volver a Informes';
+            btnVolver.setAttribute("onclick", "limpiarFormulario(); navegarA('informes-section')");
+        } else {
+            btnVolver.innerHTML = '<i class="bi bi-arrow-left"></i> Volver al Listado';
+            btnVolver.setAttribute("onclick", "limpiarFormulario(); navegarA('list-section')");
+        }
+    }
+
+    navegarA('form-section');
+}
+//<--v28
 
 // Navegación inteligente al cancelar/terminar de editar
 // --- NUEVAS FUNCIONES DE NAVEGACIÓN Y LIMPIEZA ---
