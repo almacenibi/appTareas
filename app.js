@@ -888,17 +888,17 @@ function limpiarFormulario() {
     // 1. Salir del modo edición
     modoEdicionId = null;
 
-    // 2. Resetear el formulario estándar HTML
+    // 2. Resetear el formulario HTML
     const form = document.getElementById("formularioTareas");
     if (form) form.reset();
 
-    // 3. Resetear el selector de cliente/lugar (si usa TomSelect)
+    // 3. Resetear el selector de cliente/lugar (TomSelect)
     let selectLugar = document.getElementById("lugar");
     if (selectLugar && selectLugar.tomselect) {
         selectLugar.tomselect.clear();
     }
 
-    // 4. Limpiar visores y valores ocultos de FOTO 1 y FOTO 2
+    // 4. Limpiar visores y valores ocultos de imágenes
     if (typeof quitarImagenPrevia === "function") quitarImagenPrevia();
     if (typeof quitarImagenPrevia2 === "function") quitarImagenPrevia2();
 
@@ -907,18 +907,15 @@ function limpiarFormulario() {
     if (inputImgUrl1) inputImgUrl1.value = "";
     if (inputImgUrl2) inputImgUrl2.value = "";
 
-    // 5. Restaurar títulos y botones para modo "Crear Parte"
+    // 5. Restaurar interfaz a modo "Crear Parte"
     const cardTitle = document.querySelector("#form-section .card-title");
     const btnEnviar = document.getElementById("btnEnviarParte");
     if (cardTitle) cardTitle.innerText = "Registrar Parte";
     if (btnEnviar) btnEnviar.innerHTML = '<i class="bi bi-send"></i> Guardar Parte';
 
-    // 6. Resetear compañeros al estado por defecto para un nuevo parte (equipo del usuario logueado)
-    if (typeof cargarCompanerosIniciales === "function") {
-        cargarCompanerosIniciales(); 
-    } else {
-        // En caso de no tener función dedicada, desmarcamos todos los checkboxes
-        document.querySelectorAll("#contenedorCompaneros input[type='checkbox']").forEach(chk => chk.checked = false);
+    // 6. RESETEO DE COMPAÑEROS: Volver a cargar el equipo del usuario logueado desde cero
+    if (typeof cargarCompanerosEquipo === "function") {
+        cargarCompanerosEquipo();
     }
 }
 //<-- v28.2
