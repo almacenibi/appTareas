@@ -703,11 +703,17 @@ function prepararEdicion(idTarea, origen = 'list-section') {
 function prepararEdicion(idTarea, origen = 'list-section') {
     origenNavegacion = origen;
     const tarea = datosApp.tareas.find(t => t.id === idTarea);
-    if(!tarea) return;
+    if (!tarea) return;
 
     modoEdicionId = tarea.id;
 
-    document.getElementById("lugar").tomselect.setValue(tarea.lugar);
+    // Carga de campos del formulario
+    if (document.getElementById("lugar").tomselect) {
+        document.getElementById("lugar").tomselect.setValue(tarea.lugar);
+    } else {
+        document.getElementById("lugar").value = tarea.lugar;
+    }
+
     document.getElementById("tipo").value = tarea.tipo;
     document.getElementById("estado").value = tarea.estado;
     document.getElementById("descripcion_corta").value = tarea.descripcion_corta;
@@ -717,24 +723,24 @@ function prepararEdicion(idTarea, origen = 'list-section') {
 
     let textoLimpio = tarea.parte;
     const regex = /^\[.*?\] - /;
-    if(regex.test(textoLimpio)) {
+    if (regex.test(textoLimpio)) {
         textoLimpio = textoLimpio.replace(regex, "");
     }
     document.getElementById("parte").value = textoLimpio; 
-    
-    //--> v14 ACTUALIZADO CON FILTRO FLEXIBLE (ID / NOMBRE Y MINÚSCULAS)
-    //--> v14 CORREGIDO: Renderiza a TODOS los miembros del equipo (marcados y no marcados)
-    //->v28.2
+
+    // ========================================================
+    // LÓGICA DE COMPAÑEROS EN EDICIÓN (ADMIN Y TÉCNICO)
+    // ========================================================
     const contenedorComp = document.getElementById("contenedorCompaneros");
     if (contenedorComp) {
-        // 1. Identificar el equipo objetivo
+        // 1. Determinar el equipo objetivo (Admin -> Equipo de la tarea | Técnico -> Su equipo)
         let equipoTarget = (rolValidado === 'admin' && tarea.equipo) 
             ? tarea.equipo 
             : equipoValidado;
 
         let eqTargetStr = (equipoTarget || "").toString().trim().toLowerCase();
 
-        // Buscar coincidencia por ID o Nombre de equipo en datosApp.equipos
+        // Obtener ID/Nombre del equipo desde datosApp.equipos por si viene formateado diferente
         let equipoObj = (datosApp.equipos || []).find(e => 
             (e.id || "").toString().trim().toLowerCase() === eqTargetStr || 
             (e.nombre || "").toString().trim().toLowerCase() === eqTargetStr
@@ -743,28 +749,28 @@ function prepararEdicion(idTarea, origen = 'list-section') {
         let idEquipoRef = equipoObj ? (equipoObj.id || "").toString().trim().toLowerCase() : eqTargetStr;
         let nombreEquipoRef = equipoObj ? (equipoObj.nombre || "").toString().trim().toLowerCase() : eqTargetStr;
 
-        // 2. Filtrar TODOS los usuarios que pertenecen a ese equipo
+        // 2. Filtrar todos los usuarios del equipo objetivo (Columna B Nombre, Columna A idUsuario)
         let usuariosDelEquipo = (datosApp.usuarios || []).filter(u => {
             let uEq = (u.equipo || "").toString().trim().toLowerCase();
             return uEq === idEquipoRef || uEq === nombreEquipoRef || uEq === eqTargetStr;
         });
 
-        // 3. Extraer los emails de la Columna N (compañeros asignados)
+        // 3. Obtener listado de emails guardados en la Columna N
         const companerosGuardados = tarea.companeros 
             ? tarea.companeros.split(';').map(c => c.trim().toLowerCase()).filter(Boolean)
             : [];
 
-        // 4. Garantía extra: si hay alguien guardado en la Columna N de otro equipo, lo sumamos a la lista
+        // 4. Garantía: Añadir usuarios asignados previamente que pertenezcan a otro equipo
         let setIds = new Set(usuariosDelEquipo.map(u => (u.id || "").trim().toLowerCase()));
         (datosApp.usuarios || []).forEach(u => {
-            let uEmail = (u.id || "").toString().trim().toLowerCase();
+            let uEmail = (u.id || "").trim().toLowerCase();
             if (companerosGuardados.includes(uEmail) && !setIds.has(uEmail)) {
                 usuariosDelEquipo.push(u);
                 setIds.add(uEmail);
             }
         });
 
-        // 5. Dibujar TODOS los usuarios en la pantalla
+        // 5. Inyectar checkboxes con Nombre (Col B) y Value (Col A)
         contenedorComp.innerHTML = "";
 
         if (usuariosDelEquipo.length === 0) {
@@ -783,7 +789,7 @@ function prepararEdicion(idTarea, origen = 'list-section') {
                                id="edit_comp_${index}" 
                                ${estaMarcado ? 'checked' : ''}>
                         <label class="form-check-label small" for="edit_comp_${index}">
-                            ${user.nombre} <span class="text-muted">(${user.equipo})</span>
+                            ${user.nombre}
                         </label>
                     </div>
                 `;
@@ -791,8 +797,8 @@ function prepararEdicion(idTarea, origen = 'list-section') {
         }
     }
 
-    // Miniaturas de imágenes
-    if(tarea.imagen && tarea.imagen.includes("http")) {
+    // Miniaturas de imágenes (Foto 1)
+    if (tarea.imagen && tarea.imagen.includes("http")) {
         let urlGuardada = tarea.imagen;
         let idArchivo = "";
 
@@ -815,7 +821,8 @@ function prepararEdicion(idTarea, origen = 'list-section') {
         quitarImagenPrevia();
     }
 
-    if(tarea.imagen2 && tarea.imagen2.includes("http")) {
+    // Miniaturas de imágenes (Foto 2)
+    if (tarea.imagen2 && tarea.imagen2.includes("http")) {
         let urlGuardada2 = tarea.imagen2;
         let idArchivo2 = "";
 
@@ -838,8 +845,16 @@ function prepararEdicion(idTarea, origen = 'list-section') {
         quitarImagenPrevia2();
     }
 
+    // ========================================================
+    // CONFIGURACIÓN Y ACTIVACIÓN DEL BOTÓN DE GUARDADO
+    // ========================================================
     document.querySelector("#form-section .card-title").innerText = "Modificar Parte";
-    document.getElementById("btnEnviarParte").innerHTML = '<i class="bi bi-arrow-repeat"></i> Actualizar Parte';
+    
+    const btnEnviar = document.getElementById("btnEnviarParte");
+    if (btnEnviar) {
+        btnEnviar.disabled = false; // <-- Habilitar siempre el botón
+        btnEnviar.innerHTML = '<i class="bi bi-arrow-repeat"></i> Actualizar Parte';
+    }
     
     const btnVolver = document.querySelector("#form-section .btn-outline-secondary");
     if (btnVolver) {
