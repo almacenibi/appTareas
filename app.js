@@ -542,7 +542,6 @@ function renderizarTareas(listaTareas) {
         contenedor.innerHTML = htmlLista;
     }
 
-/* -->v28 antigua función
 function prepararEdicion(idTarea, origen = 'list-section') {
     origenNavegacion = origen; // <--- AÑADE ESTA LÍNEA AQUÍ v17
     const tarea = datosApp.tareas.find(t => t.id === idTarea);
@@ -565,57 +564,15 @@ function prepararEdicion(idTarea, origen = 'list-section') {
         textoLimpio = textoLimpio.replace(regex, "");
     }
     document.getElementById("parte").value = textoLimpio; 
-    
-    
-    //--> v14 -->v29
-    //--> v14 ACTUALIZADO: Carga dinámica del equipo de la tarea y marcado de checks
-    const contenedorComp = document.getElementById("contenedorCompaneros");
-    if (contenedorComp) {
-        // 1. Determinar qué equipo renderizar:
-        // Si el usuario es admin y la tarea tiene equipo asignado, se cargan los compañeros de ESE equipo.
-        // Si no es admin, se cargan los de su equipo habitual.
-        let equipoAmostrar = (rolValidado === 'admin' && tarea.equipo) 
-            ? tarea.equipo 
-            : equipoValidado;
-
-        // 2. Extraer el listado de emails guardados en la Columna N
-        const companerosArr = tarea.companeros 
-            ? tarea.companeros.split(';').map(c => c.trim().toLowerCase()).filter(Boolean)
-            : [];
-
-        // 3. Obtener los usuarios registrados que pertenecen al equipo objetivo
-        let usuariosDelEquipo = (datosApp.usuarios || []).filter(u => u.equipo === equipoAmostrar);
-
-        // 4. Limpiar e inyectar dinámicamente los checkboxes en el DOM
-        contenedorComp.innerHTML = "";
-
-        if (usuariosDelEquipo.length === 0) {
-            contenedorComp.innerHTML = `<p class="text-muted small mb-0">No hay integrantes en el equipo "${equipoAmostrar}".</p>`;
-        } else {
-            usuariosDelEquipo.forEach((user, index) => {
-                let emailUser = (user.id || "").trim().toLowerCase();
-                let estaMarcado = companerosArr.includes(emailUser);
-
-                contenedorComp.innerHTML += `
-                    <div class="form-check border bg-white px-3 py-1 rounded shadow-sm contenedor-companero">
-                        <input class="form-check-input check-companero" 
-                               type="checkbox" 
-                               value="${user.id}" 
-                               data-nombre="${user.nombre}" 
-                               id="edit_comp_${index}" 
-                               ${estaMarcado ? 'checked' : ''}>
-                        <label class="form-check-label small" for="edit_comp_${index}">
-                            ${user.nombre} <span class="text-muted">(${user.equipo})</span>
-                        </label>
-                    </div>
-                `;
-            });
-        }
+    //--> v14
+    // Marcar los checks de los compañeros guardados
+    document.querySelectorAll("#contenedorCompaneros input[type='checkbox']").forEach(chk => chk.checked = false);
+    if (tarea.companeros) {
+        const companerosArr = tarea.companeros.split(';');
+        document.querySelectorAll("#contenedorCompaneros input[type='checkbox']").forEach(chk => {
+            if (companerosArr.includes(chk.value)) chk.checked = true;
+        });
     }
-    //--> v14 <--v29
-
-
-
     //Manipular imagen para mostrar
     // Lógica de la mini-imagen con parche para URLs antiguas
     // Lógica de la mini-imagen (Extraemos el ID y usamos el visor de miniaturas de Google)
@@ -697,184 +654,10 @@ function prepararEdicion(idTarea, origen = 'list-section') {
     navegarA('form-section');
 
 }
-<--v28 antigua función*/
-
-//-->v28 nueva función preparación edición
-function prepararEdicion(idTarea, origen = 'list-section') {
-    origenNavegacion = origen;
-    const tarea = datosApp.tareas.find(t => t.id === idTarea);
-    if (!tarea) return;
-
-    modoEdicionId = tarea.id;
-
-    // Carga de campos del formulario
-    if (document.getElementById("lugar").tomselect) {
-        document.getElementById("lugar").tomselect.setValue(tarea.lugar);
-    } else {
-        document.getElementById("lugar").value = tarea.lugar;
-    }
-
-    document.getElementById("tipo").value = tarea.tipo;
-    document.getElementById("estado").value = tarea.estado;
-    document.getElementById("descripcion_corta").value = tarea.descripcion_corta;
-    
-    document.getElementById("fecha_inicio").value = convertirAFechaInput(tarea.fecha_inicio);
-    document.getElementById("fecha_fin").value = convertirAFechaInput(tarea.fecha_fin);
-
-    let textoLimpio = tarea.parte;
-    const regex = /^\[.*?\] - /;
-    if (regex.test(textoLimpio)) {
-        textoLimpio = textoLimpio.replace(regex, "");
-    }
-    document.getElementById("parte").value = textoLimpio; 
-
-    // ========================================================
-    // LÓGICA DE COMPAÑEROS EN EDICIÓN (ADMIN Y TÉCNICO)
-    // ========================================================
-    const contenedorComp = document.getElementById("contenedorCompaneros");
-    if (contenedorComp) {
-        // 1. Determinar el equipo objetivo (Admin -> Equipo de la tarea | Técnico -> Su equipo)
-        let equipoTarget = (rolValidado === 'admin' && tarea.equipo) 
-            ? tarea.equipo 
-            : equipoValidado;
-
-        let eqTargetStr = (equipoTarget || "").toString().trim().toLowerCase();
-
-        // Obtener ID/Nombre del equipo desde datosApp.equipos por si viene formateado diferente
-        let equipoObj = (datosApp.equipos || []).find(e => 
-            (e.id || "").toString().trim().toLowerCase() === eqTargetStr || 
-            (e.nombre || "").toString().trim().toLowerCase() === eqTargetStr
-        );
-
-        let idEquipoRef = equipoObj ? (equipoObj.id || "").toString().trim().toLowerCase() : eqTargetStr;
-        let nombreEquipoRef = equipoObj ? (equipoObj.nombre || "").toString().trim().toLowerCase() : eqTargetStr;
-
-        // 2. Filtrar todos los usuarios del equipo objetivo (Columna B Nombre, Columna A idUsuario)
-        let usuariosDelEquipo = (datosApp.usuarios || []).filter(u => {
-            let uEq = (u.equipo || "").toString().trim().toLowerCase();
-            return uEq === idEquipoRef || uEq === nombreEquipoRef || uEq === eqTargetStr;
-        });
-
-        // 3. Obtener listado de emails guardados en la Columna N
-        const companerosGuardados = tarea.companeros 
-            ? tarea.companeros.split(';').map(c => c.trim().toLowerCase()).filter(Boolean)
-            : [];
-
-        // 4. Garantía: Añadir usuarios asignados previamente que pertenezcan a otro equipo
-        let setIds = new Set(usuariosDelEquipo.map(u => (u.id || "").trim().toLowerCase()));
-        (datosApp.usuarios || []).forEach(u => {
-            let uEmail = (u.id || "").trim().toLowerCase();
-            if (companerosGuardados.includes(uEmail) && !setIds.has(uEmail)) {
-                usuariosDelEquipo.push(u);
-                setIds.add(uEmail);
-            }
-        });
-
-        // 5. Inyectar checkboxes con Nombre (Col B) y Value (Col A)
-        contenedorComp.innerHTML = "";
-
-        if (usuariosDelEquipo.length === 0) {
-            contenedorComp.innerHTML = `<p class="text-muted small mb-0">No hay integrantes registrados en el equipo "${equipoTarget}".</p>`;
-        } else {
-            usuariosDelEquipo.forEach((user, index) => {
-                let emailUser = (user.id || "").trim().toLowerCase();
-                let estaMarcado = companerosGuardados.includes(emailUser);
-
-                contenedorComp.innerHTML += `
-                    <div class="form-check border bg-white px-3 py-1 rounded shadow-sm contenedor-companero">
-                        <input class="form-check-input check-companero" 
-                               type="checkbox" 
-                               value="${user.id}" 
-                               data-nombre="${user.nombre}" 
-                               id="edit_comp_${index}" 
-                               ${estaMarcado ? 'checked' : ''}>
-                        <label class="form-check-label small" for="edit_comp_${index}">
-                            ${user.nombre}
-                        </label>
-                    </div>
-                `;
-            });
-        }
-    }
-
-    // Miniaturas de imágenes (Foto 1)
-    if (tarea.imagen && tarea.imagen.includes("http")) {
-        let urlGuardada = tarea.imagen;
-        let idArchivo = "";
-
-        if (urlGuardada.includes("id=")) {
-            idArchivo = urlGuardada.split("id=")[1].split("&")[0];
-        } else if (urlGuardada.includes("/file/d/")) {
-            idArchivo = urlGuardada.split("/file/d/")[1].split("/")[0];
-        }
-
-        if (idArchivo) {
-            let urlMiniatura = "https://drive.google.com/thumbnail?id=" + idArchivo + "&sz=w400";
-            document.getElementById("contenedor_mini_imagen").style.display = "block";
-            document.getElementById("mini_imagen_preview").src = urlMiniatura;
-            document.getElementById("imagen_actual_url").value = urlGuardada; 
-            document.getElementById("imagen").style.display = "none"; 
-        } else {
-            quitarImagenPrevia();
-        }
-    } else {
-        quitarImagenPrevia();
-    }
-
-    // Miniaturas de imágenes (Foto 2)
-    if (tarea.imagen2 && tarea.imagen2.includes("http")) {
-        let urlGuardada2 = tarea.imagen2;
-        let idArchivo2 = "";
-
-        if (urlGuardada2.includes("id=")) {
-            idArchivo2 = urlGuardada2.split("id=")[1].split("&")[0];
-        } else if (urlGuardada2.includes("/file/d/")) {
-            idArchivo2 = urlGuardada2.split("/file/d/")[1].split("/")[0];
-        }
-
-        if (idArchivo2) {
-            let urlMiniatura2 = "https://drive.google.com/thumbnail?id=" + idArchivo2 + "&sz=w400";
-            document.getElementById("contenedor_mini_imagen2").style.display = "block";
-            document.getElementById("mini_imagen_preview2").src = urlMiniatura2;
-            document.getElementById("imagen_actual_url2").value = urlGuardada2; 
-            document.getElementById("imagen2").style.display = "none"; 
-        } else {
-            quitarImagenPrevia2();
-        }
-    } else {
-        quitarImagenPrevia2();
-    }
-
-    // ========================================================
-    // CONFIGURACIÓN Y ACTIVACIÓN DEL BOTÓN DE GUARDADO
-    // ========================================================
-    document.querySelector("#form-section .card-title").innerText = "Modificar Parte";
-    
-    const btnEnviar = document.getElementById("btnEnviarParte");
-    if (btnEnviar) {
-        btnEnviar.disabled = false; // <-- Habilitar siempre el botón
-        btnEnviar.innerHTML = '<i class="bi bi-arrow-repeat"></i> Actualizar Parte';
-    }
-    
-    const btnVolver = document.querySelector("#form-section .btn-outline-secondary");
-    if (btnVolver) {
-        if (origen === 'informes-section') {
-            btnVolver.innerHTML = '<i class="bi bi-arrow-left"></i> Volver a Informes';
-            btnVolver.setAttribute("onclick", "limpiarFormulario(); navegarA('informes-section')");
-        } else {
-            btnVolver.innerHTML = '<i class="bi bi-arrow-left"></i> Volver al Listado';
-            btnVolver.setAttribute("onclick", "limpiarFormulario(); navegarA('list-section')");
-        }
-    }
-
-    navegarA('form-section');
-}
-//<--v28
 
 // Navegación inteligente al cancelar/terminar de editar
 // --- NUEVAS FUNCIONES DE NAVEGACIÓN Y LIMPIEZA ---
-/*función antigua
-/*function limpiarFormulario() {
+function limpiarFormulario() {
     modoEdicionId = null; // Apagamos el modo edición
     
     document.getElementById("formularioTareas").reset();
@@ -897,43 +680,8 @@ function prepararEdicion(idTarea, origen = 'list-section') {
             btnVolver.innerHTML = '<i class="bi bi-arrow-left"></i> Volver al menú';
             btnVolver.setAttribute("onclick", "limpiarFormulario(); navegarA('menu-section')");
         }
-}*/
-//v28.2 -->
-function limpiarFormulario() {
-    // 1. Salir del modo edición
-    modoEdicionId = null;
-
-    // 2. Resetear el formulario HTML
-    const form = document.getElementById("formularioTareas");
-    if (form) form.reset();
-
-    // 3. Resetear el selector de cliente/lugar (TomSelect)
-    let selectLugar = document.getElementById("lugar");
-    if (selectLugar && selectLugar.tomselect) {
-        selectLugar.tomselect.clear();
-    }
-
-    // 4. Limpiar visores y valores ocultos de imágenes
-    if (typeof quitarImagenPrevia === "function") quitarImagenPrevia();
-    if (typeof quitarImagenPrevia2 === "function") quitarImagenPrevia2();
-
-    const inputImgUrl1 = document.getElementById("imagen_actual_url");
-    const inputImgUrl2 = document.getElementById("imagen_actual_url2");
-    if (inputImgUrl1) inputImgUrl1.value = "";
-    if (inputImgUrl2) inputImgUrl2.value = "";
-
-    // 5. Restaurar interfaz a modo "Crear Parte"
-    const cardTitle = document.querySelector("#form-section .card-title");
-    const btnEnviar = document.getElementById("btnEnviarParte");
-    if (cardTitle) cardTitle.innerText = "Registrar Parte";
-    if (btnEnviar) btnEnviar.innerHTML = '<i class="bi bi-send"></i> Guardar Parte';
-
-    // 6. RESETEO DE COMPAÑEROS: Volver a cargar el equipo del usuario logueado desde cero
-    if (typeof cargarCompanerosEquipo === "function") {
-        cargarCompanerosEquipo();
-    }
 }
-//<-- v28.2
+
 function accionVolver() {
     if (modoEdicionId) {
         // Si estábamos modificando: Limpiamos, repintamos las tareas y vamos al listado
@@ -1016,31 +764,26 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     */
     //->v28 En el submit de formularioTareas:
     // --- LÓGICA BLINDADA DE COMPAÑEROS (CREAR Y EDITAR) ---
-    // --- DETERMINAR EQUIPO (COLUMNA L) ---
-    // Si no es admin, actualiza la tarea con el equipo del técnico actual (equipoValidado).
-    // Si es admin editando, mantiene el equipo original del parte.
-    let equipoFinal = equipoValidado;
-    if (rolValidado === 'admin' && modoEdicionId) {
-        const tareaOriginal = datosApp.tareas.find(t => t.id === modoEdicionId);
-        if (tareaOriginal && tareaOriginal.equipo) {
-            equipoFinal = tareaOriginal.equipo;
-        }
-    }
+    // 1. Recoger lo seleccionado en los checkboxes
+    let seleccionados = obtenerCompanerosSeleccionados(); 
 
-    // --- DETERMINAR COMPAÑEROS (COLUMNA N) ---
-    let seleccionados = obtenerCompanerosSeleccionados();
+    // 2. Convertir en Array limpiando espacios y elementos vacíos
     let listaComp = seleccionados 
         ? seleccionados.split(';').map(e => e.trim()).filter(Boolean) 
         : [];
 
-    // Si NO es admin, forzamos que el email del técnico que edita figure en la lista
-    if (rolValidado !== 'admin') {
-        let emailEditor = (usuarioValidado || "").trim().toLowerCase();
-        if (emailEditor && !listaComp.some(e => e.toLowerCase() === emailEditor)) {
-            listaComp.unshift(emailEditor);
+    // 3. Normalizar el email del usuario logueado (editor/creador actual)
+    let emailEditor = (usuarioValidado || "").trim().toLowerCase();
+
+    // 4. Insertar al usuario editor si no figura ya en la lista
+    if (emailEditor) {
+        let yaIncluido = listaComp.some(e => e.toLowerCase() === emailEditor);
+        if (!yaIncluido) {
+            listaComp.unshift(emailEditor); // Lo añade al principio
         }
     }
 
+    // 5. Cadena final limpia para la Columna N
     let companerosTexto = listaComp.join(';');
     //v28 <--
 
@@ -1062,7 +805,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         //v26 MODIFICADOS USUARIO Y ASIGNADOPOR
         usuario: usuarioAsignado,
         asignadoPor: adminQueAsigna,
-        equipo: equipoFinal,           // <-- Se actualiza correctamente
+        equipo: equipoValidado,
         companeros: companerosTexto, // Usamos la variable ajustada v28
         //companeros: obtenerCompanerosSeleccionados(),
         

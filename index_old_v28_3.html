@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Registro de Tareas</title>
+    
+    <!-- CSS y Librerías -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        /* Ocultamos todas las secciones por defecto menos el loading */
+        .app-section { display: none; }
+        #loading { display: block; }
+        
+        .app-container { max-width: 700px; margin: auto; padding: 20px 15px; }
+        
+        /* Estilos para las tarjetas del menú */
+        .menu-card {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: none;
+            background-color: #ffffff;
+        }
+        .menu-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+            border-color: #0d6efd;
+        }
+        .menu-icon { font-size: 2.5rem; color: #0d6efd; margin-bottom: 10px; }
+        
+        /* Estilo general de la app */
+        body { background-color: #f4f6f9; }
+        .card { border-radius: 12px; border: none; }
+    </style>
+</head>
+<body>
+
+<div class="container app-container">
+    
+   <!-- CABECERA DE USUARIO -->
+    <div id="user-header" class="app-section mb-4 text-end">
+        <span class="badge bg-primary rounded-pill px-3 py-2 shadow-sm">
+            <i class="bi bi-person-circle me-1"></i> <span id="headerNombre"></span> | <span id="headerEquipo"></span> 
+            <span class="ms-2 border-start ps-2 text-warning fw-bold text-uppercase" style="font-size: 0.75rem;" id="headerRol"></span>
+        </span>
+    </div>
+
+    <!-- 0. PANTALLA DE CARGA INICIAL -->
+    <div id="loading" class="text-center mt-5 app-section">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+        <p class="mt-3 fw-bold text-secondary">Sincronizando datos v28.3 ...</p>
+    </div>
+
+    <!-- 1. PANTALLA: LOGIN -->
+    <div id="login-section" class="app-section">
+        <div class="card shadow mt-4">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <i class="bi bi-clipboard-data text-primary" style="font-size: 3rem;"></i>
+                    <h3 class="mt-2 fw-bold">App Tareas</h3>
+                    <p class="text-muted">Inicia sesión con tu cuenta</p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Correo electrónico</label>
+                    <input type="email" class="form-control form-control-lg" id="emailInput" placeholder="usuario@gmail.com">
+                </div>
+                <button id="btnLogin" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm">Acceder</button>
+                <div id="loginError" class="alert alert-danger mt-3 text-center" style="display: none;">
+                    Usuario no encontrado o sin permisos.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. PANTALLA: MENÚ PRINCIPAL (El Grid) -->
+    <div id="menu-section" class="app-section">
+        <h4 class="fw-bold mb-4">¿Qué deseas hacer hoy?</h4>
+        <div class="row g-3">
+            <!-- 1 por fila en móvil (col-12), 2 por fila en PC/Tablet (col-md-6) -->
+            <div class="col-12 col-md-6">
+                <div class="card shadow-sm menu-card h-100 p-4 text-center" onclick="navegarA('form-section')">
+                    <i class="bi bi-pencil-square menu-icon"></i>
+                    <h5 class="fw-bold">Registrar Parte</h5>
+                    <p class="text-muted small mb-0">Crear un nuevo parte de trabajo</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                
+                <div class="card shadow-sm menu-card h-100 p-4 text-center" onclick="abrirListadoActualizado()">
+                    <i class="bi bi-card-list menu-icon"></i>
+                    <h5 class="fw-bold">Revisar Listado</h5>
+                    <p class="text-muted small mb-0">Ver tus partes anteriores</p>
+                </div>
+            </div>
+
+            <!-- NUEVO BOTÓN ADMIN (Oculto por defecto) v24 --> 
+            <div class="col-12 col-md-6 d-none" id="colMenuAdmin">
+                <div class="card shadow-sm menu-card h-100 p-4 text-center border-warning" onclick="abrirFormularioAdmin()">
+                    <i class="bi bi-person-badge fs-1 text-warning mb-3"></i>
+                    <h5 class="fw-bold text-warning">Asignar Parte</h5>
+                    <p class="text-muted small mb-0">Exclusivo Administración</p>
+                </div>
+            </div>
+            <!-- v24-->
+
+            <div class="col-12 col-md-6">
+                <div class="card shadow-sm menu-card h-100 p-4 text-center" onclick="navegarA('informes-section')">
+                    <i class="bi bi-file-earmark-pdf fs-1 text-danger mb-3"></i>
+                    <h5 class="fw-bold">Informes y Exportación</h5>
+                    <p class="text-muted small">Generar informes globales en pantalla y PDF</p>
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="card shadow-sm menu-card h-100 p-4 text-center" onclick="alert('Módulo en construcción')">
+                    <i class="bi bi-three-dots menu-icon"></i>
+                    <h5 class="fw-bold">Otros</h5>
+                    <p class="text-muted small mb-0">Herramientas adicionales</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. PANTALLA: FORMULARIO DE PARTES -->
+    <div id="form-section" class="app-section">
+        <!-- Botón Volver (ACTUALIZADO) -->
+        <button type="button" class="btn btn-outline-secondary mb-3 shadow-sm" onclick="accionVolver()">
+            <i class="bi bi-arrow-left"></i> Volver al menú
+        </button>
+
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h4 class="card-title fw-bold mb-4 border-bottom pb-2">Nuevo Parte de Trabajo</h4>
+                
+                <form id="formularioTareas">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Lugar / Cliente</label>
+                        <select id="lugar" required autocomplete="off">
+                            <option value="">Selecciona o escribe para buscar...</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12 col-md-6 mb-3">
+                            <label class="form-label fw-bold">Tipo</label>
+                            <select class="form-select" id="tipo" required>
+                                <option value="">Selecciona...</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6 mb-3">
+                            <label class="form-label fw-bold">Estado</label>
+                            <select class="form-select" id="estado" required>
+                                <option value="">Selecciona...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Descripción Corta</label>
+                        <input type="text" class="form-control" id="descripcion_corta" maxlength="100" placeholder="Ej: Reparación de luminaria" required>
+                    </div>
+                    
+                    <!-- Compañeros de Equipo -->
+                    <div class="mb-3 p-3 bg-light rounded border">
+                        <label class="form-label small fw-bold text-muted"><i class="bi bi-people"></i> COMPAÑEROS DE EQUIPO EN ESTE PARTE</label>
+                        <div id="contenedorCompaneros" class="d-flex flex-wrap gap-2 mt-2">
+                            <!-- Los checkboxes se inyectarán por JS -->
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Fecha Inicio</label>
+                            <input type="date" class="form-control" id="fecha_inicio" required>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label fw-bold">Fecha Fin</label>
+                            <input type="date" class="form-control" id="fecha_fin" required>
+                        </div>
+                    </div>
+
+                    <!-- Zona de edición (Solo visible al modificar)
+                    <div id="zona_edicion_parte" style="display: none;" class="mb-4 p-3 bg-light border rounded">
+                        <label class="form-label fw-bold text-secondary"><i class="bi bi-archive"></i> Parte Anterior Registrado</label>
+                        <textarea class="form-control bg-white mb-2 text-muted" id="parte_anterior" rows="3" disabled></textarea>
+                        
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" id="borrar_parte_anterior">
+                            <label class="form-check-label text-danger fw-bold small" for="borrar_parte_anterior">
+                                <i class="bi bi-exclamation-triangle"></i> Borrar el histórico anterior al guardar (Acción irreversible)
+                            </label>
+                        </div>
+                    </div> -->
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" id="label_nuevo_parte">Desarrollo del Parte</label>
+                        <textarea class="form-control" id="parte" rows="5" placeholder="Escribe aquí los detalles del trabajo realizado..." required></textarea>
+                    </div>
+
+                    <!-- ================================== -->
+                    <!-- FOTO 1: PREVIA A LA INTERVENCIÓN   -->
+                    <!-- ================================== -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-camera text-primary"></i> Foto Previa (Antes)
+                        </label>
+                        
+                        <!-- Contenedor mini imagen (Solo visible al editar si ya hay foto) -->
+                        <div id="contenedor_mini_imagen" class="mb-2" style="display: none;">
+                            <div class="position-relative d-inline-block border rounded p-1">
+                                <img id="mini_imagen_preview" src="" alt="Imagen" style="max-height: 80px; max-width: 120px; object-fit: cover; opacity: 0.8;">
+                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle p-0" style="width: 24px; height: 24px;" onclick="quitarImagenPrevia()" title="Eliminar imagen actual">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                            <input type="hidden" id="imagen_actual_url" value="">
+                            <p class="small text-muted mt-1 mb-0">Imagen previa actual. Toca la X para borrarla y subir otra.</p>
+                        </div>
+                        
+                        <!-- Input normal para subir foto -->
+                        <input type="file" class="form-control" id="imagen" accept="image/*">
+                    </div>
+
+                    <!-- ================================== -->
+                    <!-- FOTO 2: POSTERIOR A LA INTERVENCIÓN-->
+                    <!-- ================================== -->
+                    <div class="mb-4 pt-2 border-top">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-camera-fill text-success"></i> Foto Posterior (Después)
+                        </label>
+                        
+                        <!-- Contenedor mini imagen (Solo visible al editar si ya hay foto) -->
+                        <div id="contenedor_mini_imagen2" class="mb-2" style="display: none;">
+                            <div class="position-relative d-inline-block border rounded p-1">
+                                <img id="mini_imagen_preview2" src="" alt="Imagen Posterior" style="max-height: 80px; max-width: 120px; object-fit: cover; opacity: 0.8;">
+                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle p-0" style="width: 24px; height: 24px;" onclick="quitarImagenPrevia2()" title="Eliminar imagen actual">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                            <input type="hidden" id="imagen_actual_url2" value="">
+                            <p class="small text-muted mt-1 mb-0">Imagen posterior actual. Toca la X para borrarla y subir otra.</p>
+                        </div>
+                        
+                        <!-- Input normal para subir foto -->
+                        <input type="file" class="form-control" id="imagen2" accept="image/*">
+                        <div class="form-text mt-2"><i class="bi bi-cloud-arrow-up"></i> Las fotos se guardarán en Drive automáticamente.</div>
+                    </div>
+                    
+
+                    <!--v26 Admin asigna partes-->
+                    
+                    <!-- SELECTOR EXCLUSIVO PARA ADMIN -->
+                    <div id="contenedor_admin_selector_tecnico" class="mb-3 d-none bg-warning bg-opacity-10 p-3 rounded border border-warning-subtle">
+                        <label class="form-label fw-bold text-warning-emphasis">Asignar a (Técnico) - Modo Admin</label>
+                        <input class="form-control border-warning" list="listaTecnicosAdmin" id="admin_tecnico_estandar" placeholder="Buscar técnico..." autocomplete="off">
+                        <datalist id="listaTecnicosAdmin"></datalist>
+                        <div class="form-text small">Estás registrando/editando este parte en nombre de otro usuario.</div>
+                    </div>
+                    <!--v26 Admin asigna partes-->
+
+                    <!-- AQUÍ IREMOS PONIENDO EL BOTÓN DE ENVIAR Y EL SPINNER DE CARGA AL ENVIAR -->
+                    <button type="submit" class="btn btn-success btn-lg w-100 fw-bold shadow-sm" id="btnEnviarParte">
+                        <i class="bi bi-send-check"></i> Enviar Parte
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- v14 -->
+    <!-- ========================================== -->
+    <!-- 4. PANTALLA: FORMULARIO DE ASIGNACIÓN ADMIN-->
+    <!-- ========================================== -->
+    <div id="admin-form-section" class="app-section">
+        
+        <!-- Botón Volver -->
+        <button type="button" class="btn btn-outline-secondary mb-3 shadow-sm" onclick="navegarA('menu-section')">
+            <i class="bi bi-arrow-left"></i> Volver al menú
+        </button>
+
+        <div class="card shadow border-warning">
+            <div class="card-body p-4">
+                <h4 class="card-title fw-bold mb-4 border-bottom border-warning pb-2 text-warning-emphasis">
+                    <i class="bi bi-person-badge"></i> Nueva Asignación de Parte
+                </h4>
+                
+                <form id="formularioAdmin"> <!--v25-->
+                    
+                    <!-- BLOQUE EXCLUSIVO: DATOS DE ASIGNACIÓN CON PREDICTORES -->
+                    <div class="row bg-warning bg-opacity-10 p-3 rounded mb-4 border border-warning-subtle mx-0">
+                        <div class="col-12 col-md-4 mb-3 mb-md-0">
+                            <label class="form-label fw-bold small text-warning-emphasis">Origen</label>
+                            <input class="form-control" list="listaOrigenes" id="admin_idOrigen" placeholder="Buscar origen..." required autocomplete="off">
+                            <datalist id="listaOrigenes"></datalist>
+                        </div>
+                        <div class="col-12 col-md-4 mb-3 mb-md-0">
+                            <label class="form-label fw-bold small text-warning-emphasis">Solicitante</label>
+                            <input class="form-control" list="listaSolicitantes" id="admin_idSolicitante" placeholder="Buscar solicitante..." autocomplete="off">
+                            <datalist id="listaSolicitantes"></datalist>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-bold small text-warning-emphasis">Asignar a (Equipo)</label>
+                            <input class="form-control border-warning" list="listaEquiposAdmin" id="admin_equipo" placeholder="Buscar equipo..." required autocomplete="off">
+                            <datalist id="listaEquiposAdmin"></datalist>
+                        </div>
+                    </div>
+
+                    <!-- BLOQUE ESTÁNDAR: LUGAR, UBICACIÓN, TIPO Y ESTADO -- v27.4 diseño como el registro de tareas stándard> -->
+                    <div class="mb-3"> 
+                        <label class="form-label fw-bold">Lugar / Cliente</label>
+                        <select class="form-select" id="admin_lugar" required>
+                            <option value="">Selecciona o escribe para buscar...</option>
+                        </select>
+                    </div>
+
+                    <!-- NUEVO CAMPO: UBICACIÓN -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ubicación</label>
+                        <input type="text" class="form-control" list="listaUbicacionesAdmin" id="admin_ubicacion" placeholder="Ej: Planta baja, primaria, infantil..." autocomplete="off">
+                        <datalist id="listaUbicacionesAdmin"></datalist>
+                        <div class="form-text small">Especifica la zona exacta o escribe una nueva.</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12 col-md-6 mb-3">
+                            <label class="form-label fw-bold">Tipo</label>
+                            <select class="form-select" id="admin_tipo" required>
+                                <option value="">Selecciona...</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6 mb-3">
+                            <label class="form-label fw-bold">Estado</label>
+                            <select class="form-select" id="admin_estado" required>
+                                <option value="">Selecciona...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Descripción Corta</label>
+                        <!-- Estilos limpios: quitamos fw-bold y text-primary -->
+                        <input type="text" class="form-control" id="admin_descripcion_corta" maxlength="100" placeholder="Ej: [Origen] [Ubicación] | [Actuaciones]" required>
+                    </div>
+
+                    <!-- BLOQUE EXCLUSIVO: INSTRUCCIONES Y ACTUACIONES -->
+                    <div class="mb-4 p-3 bg-info bg-opacity-10 rounded border border-info-subtle">
+                        <label class="form-label fw-bold text-info-emphasis"><i class="bi bi-ui-checks"></i> Actuaciones Requeridas</label>
+                        <div id="admin_contenedor_actuaciones" class="d-flex flex-wrap gap-2 mt-2 mb-3">
+                            <!-- Checkboxes inyectados por JS -->
+                        </div>
+
+                        <label class="form-label fw-bold text-info-emphasis"><i class="bi bi-journal-text"></i> Nota / Instrucciones de Expediente</label>
+                        <textarea class="form-control border-info-subtle" id="admin_nota" rows="4" placeholder="Pega aquí los datos del expediente..."></textarea>
+                    </div>
+                    
+                    <!-- Compañeros de Equipo -->
+                    <div class="mb-3 p-3 bg-light rounded border">
+                        <label class="form-label small fw-bold text-muted"><i class="bi bi-people"></i> COMPAÑEROS EN ESTE PARTE</label>
+                        <div id="admin_contenedorCompaneros" class="d-flex flex-wrap gap-2 mt-2">
+                            <!-- Checkboxes inyectados por JS -->
+                        </div>
+                    </div>
+                    <!--v25 y v27 incluir fecha solicitud-->      
+                    <div class="row">
+                        <div class="col-12 col-md-4 mb-3">
+                            <label class="form-label fw-bold text-info-emphasis">Fecha Solicitud (Admin)</label>
+                            <input type="date" class="form-control border-info" id="admin_fecha_solicitud" required>
+                        </div>
+                        <div class="col-6 col-md-4 mb-3">
+                            <label class="form-label fw-bold">Fecha Inicio</label>
+                            <input type="date" class="form-control" id="admin_fecha_inicio" required>
+                        </div>
+                        <div class="col-6 col-md-4 mb-3">
+                            <label class="form-label fw-bold">Fecha Fin</label>
+                            <input type="date" class="form-control" id="admin_fecha_fin" required>
+                        </div>
+                    </div>
+                    <!--v25 y v27 incluir fecha solicitud-->
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" id="admin_label_nuevo_parte">Desarrollo del Parte (Opcional para el Admin)</label>
+                        <textarea class="form-control" id="admin_parte" rows="3" placeholder="Si es necesario, inicia el desarrollo del parte aquí..."></textarea>
+                    </div>
+
+                    <!-- ================================== -->
+                    <!-- FOTOS (Idéntico al original)       -->
+                    <!-- ================================== -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold"><i class="bi bi-camera text-primary"></i> Foto Previa (Antes)</label>
+                        <input type="file" class="form-control" id="admin_imagen" accept="image/*">
+                    </div>
+
+                    <div class="mb-4 pt-2 border-top">
+                        <label class="form-label fw-bold"><i class="bi bi-camera-fill text-success"></i> Foto Posterior (Después)</label>
+                        <input type="file" class="form-control" id="admin_imagen2" accept="image/*">
+                        <div class="form-text mt-2"><i class="bi bi-cloud-arrow-up"></i> Las fotos se guardarán en Drive automáticamente.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold shadow-sm" id="btnEnviarAdmin">
+                        <i class="bi bi-send-plus-fill"></i> Crear y Asignar Parte
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- v14 -->
+
+
+    <!-- 5 PANTALLA: LISTADO DE PARTES -->
+    <div id="list-section" class="app-section">
+        <!-- Botón Volver -->
+        <button class="btn btn-outline-secondary mb-3 shadow-sm" onclick="navegarA('menu-section')">
+            <i class="bi bi-arrow-left"></i> Volver al menú
+        </button>
+
+        <div class="card shadow">
+            <div class="card-body p-3 p-md-4">
+                <h4 class="card-title fw-bold mb-4 border-bottom pb-2">Mis Tareas Registradas</h4>
+                
+                <!-- Barra de controles: Filtros y Búsqueda -->
+                <div class="row g-2 mb-4">
+                    <div class="col-12 col-md-4">
+                        <div class="input-group shadow-sm">
+                            <span class="input-group-text bg-white"><i class="bi bi-calendar3"></i></span>
+                            <select class="form-select border-start-0" id="filtroMes">
+                                <!-- Las opciones las inyectará JS dinámicamente -->
+                                <option value="actual">Mes en curso</option>
+                                <option value="todo">Ver histórico completo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-8 col-md-6">
+                        <div class="input-group shadow-sm">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control border-start-0" id="buscadorPartes" placeholder="Buscar texto libre...">
+                        </div>
+                    </div>
+                    <div class="col-4 col-md-2">
+                        <!-- Este botón ahora abre el panel lateral -->
+                        <button class="btn btn-outline-primary w-100 shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#panelFiltros">
+                            <i class="bi bi-funnel"></i> Filtros
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Contenedor donde Javascript inyectará los meses y las tareas -->
+                <div id="contenedorListaTareas">
+                    
+                    <!-- ESTRUCTURA BOCETO (Javascript lo generará así) -->
+                    <h6 class="fw-bold text-primary mt-4 mb-3 text-uppercase border-bottom border-primary border-2 pb-1 d-inline-block">Octubre 2026</h6>
+                    
+                    <div class="list-group shadow-sm mb-4">
+                        <div class="list-group-item p-3">
+                            <div class="row align-items-center g-3">
+                                <!-- Info de la tarea -->
+                                <div class="col-12 col-md-9">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <h5 class="fw-bold mb-0">Ayuntamiento de Madrid</h5>
+                                    </div>
+                                    <p class="text-muted mb-2">Reparación de luminaria principal</p>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <span class="badge bg-light text-dark border"><i class="bi bi-calendar-event text-secondary"></i> 18/10/26 - 19/10/26</span>
+                                        <span class="badge bg-warning text-dark"><i class="bi bi-clock-history"></i> En curso</span>
+                                    </div>
+                                </div>
+                                <!-- Botones de acción -->
+                                <div class="col-12 col-md-3 d-flex flex-row flex-md-column gap-2 justify-content-end">
+                                    <button class="btn btn-sm btn-outline-primary w-100" onclick="alert('Cargando parte para modificar...')">
+                                        <i class="bi bi-pencil-square"></i> Modificar
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger w-100" onclick="alert('¿Seguro que deseas eliminar este parte?')">
+                                        <i class="bi bi-trash"></i> Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- FIN ESTRUCTURA BOCETO -->
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECCIÓN 6: INFORMES Y PDF                  -->
+    <!-- ========================================== -->
+    <div id="informes-section" class="app-section" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold text-primary"><i class="bi bi-file-earmark-pdf"></i> Generador de Informes</h4>
+            <button class="btn btn-outline-secondary btn-sm" onclick="navegarA('menu-section')"><i class="bi bi-arrow-left"></i> Volver</button>
+        </div>
+
+        <!-- Panel de Configuración del Informe -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark text-white fw-bold">
+                <i class="bi bi-gear"></i> CONFIGURACIÓN: INFORME GLOBAL
+            </div>
+            <div class="card-body">
+                <!-- Fila principal de Fechas, Observaciones y Botón -->
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted">FECHA INICIO</label>
+                        <input type="date" class="form-control" id="informe_fecha_inicio">
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted">FECHA FIN (Opcional)</label>
+                        <input type="date" class="form-control" id="informe_fecha_fin">
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted">OBSERVACIONES</label>
+                        <!-- Aquí aplicamos la cursiva (fst-italic) y un tono gris suave (text-secondary) -->
+                        <div class="text-secondary fst-italic mt-1" style="font-size: 0.8rem; line-height: 1.4;">
+                            * Día de inicio -> Obligatorio.<br>
+                            * Día fin vacío -> El informe será del día seleccionado.
+                        </div>
+                    </div>
+
+                    <!-- Para que el botón quede alineado abajo con los inputs, usamos pt-4 -->
+                    <div class="col-md-2 pt-4">
+                        <button class="btn btn-primary w-100 shadow-sm" style="height: 38px;" onclick="generarInforme()">
+                            Generar
+                        </button>
+                    </div>
+
+                    <!-- Checkboxes para personalizar columnas -->
+                    <div class="col-12 mt-3 pt-3 border-top">
+                        <span class="small fw-bold text-muted me-3"><i class="bi bi-sliders"></i> MOSTRAR EN INFORME:</span>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="chk_inf_tipo" checked>
+                            <label class="form-check-label small" for="chk_inf_tipo">Tipo trabajo</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="chk_inf_fechas" checked>
+                            <label class="form-check-label small" for="chk_inf_fechas">Fechas</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="chk_inf_dias" checked>
+                            <label class="form-check-label small" for="chk_inf_dias">Nº de Días</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="chk_inf_equipo" checked>
+                            <label class="form-check-label small" for="chk_inf_equipo">Equipo</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visor del Informe (Boceto estático) -->
+        <!-- Visor del Informe (Boceto estático) -->
+        <div id="contenedorResultadoInforme" class="card shadow-sm border-primary">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0 text-primary">Vista Previa del Informe</h6>
+                <button class="btn btn-danger btn-sm shadow-sm" id="btnExportarPDF" onclick="exportarPDF()">
+                    <i class="bi bi-filetype-pdf"></i> Exportar a PDF
+                </button>
+            </div>
+            
+            <!-- El aspecto final de las líneas del informe -->
+            <div class="card-body bg-light p-4" id="informeVisual">
+                
+                <div class="text-center text-muted py-4">
+                    <p class="small mb-3">El informe se generará con este formato básico. Usa los <strong>[x]</strong> de arriba para ocultar datos.</p>
+                    
+                    <!-- Plantilla vacía de ejemplo -->
+                    <div class="bg-white p-3 border rounded shadow-sm d-flex align-items-md-center flex-column flex-md-row gap-3 text-start mx-auto opacity-75" style="max-width: 900px; pointer-events: none;">
+                        <div class="bg-secondary text-white rounded px-3 py-2 fw-bold fs-4 text-center" style="min-width: 70px;">#</div>
+                        <div class="flex-grow-1">
+                            <div class="mb-1">
+                                <span class="fw-bold text-dark fs-5 me-2">[Lugar del trabajo]</span>
+                                <span class="fst-italic text-secondary">[Descripción corta]</span>
+                            </div>
+                            <div class="d-flex flex-wrap align-items-center gap-2 mt-2 mt-md-1">
+                                <span class="badge bg-secondary px-2 py-1">[Tipo]</span>
+                                <span class="text-dark small border px-2 py-1 rounded bg-light"><i class="bi bi-calendar-event text-muted"></i> [Inicio] - [Fin]</span>
+                                <span class="badge bg-info text-dark px-2 py-1">[Días]</span>
+                                <span class="badge bg-dark px-2 py-1">[Equipo]</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+<!-- PANEL LATERAL DE FILTROS (OFFCANVAS) -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="panelFiltros" aria-labelledby="panelFiltrosLabel">
+    <div class="offcanvas-header bg-light border-bottom">
+        <h5 class="offcanvas-title fw-bold" id="panelFiltrosLabel"><i class="bi bi-funnel text-primary"></i> Filtros Avanzados</h5>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+    </div>
+    <div class="offcanvas-body">
+        
+        <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">LUGAR / CLIENTE</label>
+            <select class="form-select form-select-sm" id="filtro_lugar">
+                <option value="">Todos los lugares</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">ESTADO</label>
+            <select class="form-select form-select-sm" id="filtro_estado">
+                <option value="">Todos los estados</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">TIPO DE TRABAJO</label>
+            <select class="form-select form-select-sm" id="filtro_tipo">
+                <option value="">Todos los tipos</option>
+            </select>
+        </div>
+
+        <div class="row g-2 mb-3">
+            <div class="col-6">
+                <label class="form-label small fw-bold text-muted">FECHA DESDE</label>
+                <input type="date" class="form-control form-control-sm" id="filtro_fecha_inicio">
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-bold text-muted">FECHA HASTA</label>
+                <input type="date" class="form-control form-control-sm" id="filtro_fecha_fin">
+            </div>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- ZONA EXCLUSIVA ADMINISTRADORES -->
+        <div id="zonaFiltrosAdmin" class="bg-light p-3 rounded border opacity-75">
+            <p class="small fw-bold text-primary mb-2"><i class="bi bi-shield-lock"></i> Controles de Administración</p>
+            <div class="mb-2">
+                <label class="form-label small text-muted">FILTRAR POR USUARIO</label>
+                <select class="form-select form-select-sm" id="filtro_usuario" disabled>
+                    <option value="">Todos los usuarios</option>
+                </select>
+            </div>
+            <div>
+                <label class="form-label small text-muted">FILTRAR POR EQUIPO</label>
+                <select class="form-select form-select-sm" id="filtro_equipo" disabled>
+                    <option value="">Todos los equipos</option>
+                </select>
+            </div>
+        </div>
+        
+    </div>
+    <div class="offcanvas-footer p-3 border-top bg-white">
+        <button class="btn btn-primary w-100 fw-bold shadow-sm" onclick="aplicarFiltrosLaterales()">
+            <i class="bi bi-check2-circle"></i> Aplicar Filtros
+        </button>
+        <button class="btn btn-link text-danger w-100 text-decoration-none mt-1" onclick="limpiarFiltrosLaterales()">
+            Limpiar todo
+        </button>
+    </div>
+</div>
+
+
+<!-- Librerías JS -->
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+<!-- MOTOR DE BOOTSTRAP PARA PANELES Y ANIMACIONES -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+<!-- LIBRERÍA PARA GENERAR PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<!-- LÓGICA DE NUESTRA APLICACIÓN -->
+<script src="app.js?v=23"></script>
+</body>
+</html>
