@@ -723,44 +723,50 @@ function prepararEdicion(idTarea, origen = 'list-section') {
     document.getElementById("parte").value = textoLimpio; 
     
     //--> v14 ACTUALIZADO CON FILTRO FLEXIBLE (ID / NOMBRE Y MINÚSCULAS)
+    //--> v14 v28.1 ACTUALIZADO: Carga inteligente de compañeros (Técnico vs Admin)
     const contenedorComp = document.getElementById("contenedorCompaneros");
     if (contenedorComp) {
-        // 1. Determinar el valor de equipo base
-        let equipoBase = (rolValidado === 'admin' && tarea.equipo) 
+        // 1. Determinar el equipo objetivo:
+        // - Técnico (no admin): SIEMPRE ve a su propio equipo (equipoValidado).
+        // - Admin: Intenta cargar el equipo asignado al parte (tarea.equipo).
+        let equipoTarget = (rolValidado === 'admin' && tarea.equipo) 
             ? tarea.equipo 
             : equipoValidado;
 
-        let equipoVal = (equipoBase || "").toString().trim().toLowerCase();
+        let eqTargetNorm = (equipoTarget || "").toString().trim().toLowerCase();
 
-        // 2. Buscar si el valor corresponde a un objeto de equipo en datosApp.equipos (para tener tanto ID como Nombre)
-        let equipoObj = (datosApp.equipos || []).find(e => 
-            (e.id || "").toString().trim().toLowerCase() === equipoVal || 
-            (e.nombre || "").toString().trim().toLowerCase() === equipoVal
-        );
-
-        let idEquipoRef = equipoObj ? (equipoObj.id || "").toString().trim().toLowerCase() : equipoVal;
-        let nombreEquipoRef = equipoObj ? (equipoObj.nombre || "").toString().trim().toLowerCase() : equipoVal;
-
-        // 3. Filtrar usuarios comparando tanto por ID de equipo como por Nombre de equipo
-        let usuariosDelEquipo = (datosApp.usuarios || []).filter(u => {
-            let userEq = (u.equipo || "").toString().trim().toLowerCase();
-            return userEq === idEquipoRef || userEq === nombreEquipoRef || userEq === equipoVal;
-        });
-
-        // 4. Extraer compañeros guardados en la Columna N
-        const companerosArr = tarea.companeros 
+        // 2. Extraer los correos guardados actualmente en la Columna N
+        const companerosGuardados = tarea.companeros 
             ? tarea.companeros.split(';').map(c => c.trim().toLowerCase()).filter(Boolean)
             : [];
 
-        // 5. Inyectar en el DOM
+        // 3. Buscar usuarios pertenecientes al equipo objetivo
+        let usuariosTarget = (datosApp.usuarios || []).filter(u => {
+            let uEq = (u.equipo || "").toString().trim().toLowerCase();
+            return uEq === eqTargetNorm;
+        });
+
+        // 4. GARANTÍA ADMIN / FALLBACK: Sumar cualquier usuario que ya esté en Columna N 
+        // aunque su nombre de equipo no coincida exactamente.
+        let idsUsuariosTarget = new Set(usuariosTarget.map(u => u.id.toLowerCase()));
+        
+        (datosApp.usuarios || []).forEach(u => {
+            let uEmail = (u.id || "").toString().trim().toLowerCase();
+            if (companerosGuardados.includes(uEmail) && !idsUsuariosTarget.has(uEmail)) {
+                usuariosTarget.push(u);
+                idsUsuariosTarget.add(uEmail);
+            }
+        });
+
+        // 5. Inyectar checkboxes en el DOM
         contenedorComp.innerHTML = "";
 
-        if (usuariosDelEquipo.length === 0) {
-            contenedorComp.innerHTML = `<p class="text-muted small mb-0">No hay integrantes en el equipo "${equipoBase}".</p>`;
+        if (usuariosTarget.length === 0) {
+            contenedorComp.innerHTML = `<p class="text-muted small mb-0">No hay integrantes registrados para el equipo "${equipoTarget}".</p>`;
         } else {
-            usuariosDelEquipo.forEach((user, index) => {
+            usuariosTarget.forEach((user, index) => {
                 let emailUser = (user.id || "").trim().toLowerCase();
-                let estaMarcado = companerosArr.includes(emailUser);
+                let estaMarcado = companerosGuardados.includes(emailUser);
 
                 contenedorComp.innerHTML += `
                     <div class="form-check border bg-white px-3 py-1 rounded shadow-sm contenedor-companero">
@@ -953,26 +959,31 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     */
     //->v28 En el submit de formularioTareas:
     // --- LÓGICA BLINDADA DE COMPAÑEROS (CREAR Y EDITAR) ---
-    // 1. Recoger lo seleccionado en los checkboxes
-    let seleccionados = obtenerCompanerosSeleccionados(); 
+    // --- DETERMINAR EQUIPO (COLUMNA L) ---
+    // Si no es admin, actualiza la tarea con el equipo del técnico actual (equipoValidado).
+    // Si es admin editando, mantiene el equipo original del parte.
+    let equipoFinal = equipoValidado;
+    if (rolValidado === 'admin' && modoEdicionId) {
+        const tareaOriginal = datosApp.tareas.find(t => t.id === modoEdicionId);
+        if (tareaOriginal && tareaOriginal.equipo) {
+            equipoFinal = tareaOriginal.equipo;
+        }
+    }
 
-    // 2. Convertir en Array limpiando espacios y elementos vacíos
+    // --- DETERMINAR COMPAÑEROS (COLUMNA N) ---
+    let seleccionados = obtenerCompanerosSeleccionados();
     let listaComp = seleccionados 
         ? seleccionados.split(';').map(e => e.trim()).filter(Boolean) 
         : [];
 
-    // 3. Normalizar el email del usuario logueado (editor/creador actual)
-    let emailEditor = (usuarioValidado || "").trim().toLowerCase();
-
-    // 4. Insertar al usuario editor si no figura ya en la lista
-    if (emailEditor) {
-        let yaIncluido = listaComp.some(e => e.toLowerCase() === emailEditor);
-        if (!yaIncluido) {
-            listaComp.unshift(emailEditor); // Lo añade al principio
+    // Si NO es admin, forzamos que el email del técnico que edita figure en la lista
+    if (rolValidado !== 'admin') {
+        let emailEditor = (usuarioValidado || "").trim().toLowerCase();
+        if (emailEditor && !listaComp.some(e => e.toLowerCase() === emailEditor)) {
+            listaComp.unshift(emailEditor);
         }
     }
 
-    // 5. Cadena final limpia para la Columna N
     let companerosTexto = listaComp.join(';');
     //v28 <--
 
@@ -994,7 +1005,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         //v26 MODIFICADOS USUARIO Y ASIGNADOPOR
         usuario: usuarioAsignado,
         asignadoPor: adminQueAsigna,
-        equipo: equipoValidado,
+        equipo: equipoFinal,           // <-- Se actualiza correctamente
         companeros: companerosTexto, // Usamos la variable ajustada v28
         //companeros: obtenerCompanerosSeleccionados(),
         
