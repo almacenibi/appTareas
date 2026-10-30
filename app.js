@@ -777,7 +777,7 @@ function prepararEdicion(idTarea, origen = 'list-section') {
                                id="edit_comp_${index}" 
                                ${estaMarcado ? 'checked' : ''}>
                         <label class="form-check-label small" for="edit_comp_${index}">
-                            ${user.nombre} <span class="text-muted">(${user.equipo})</span>
+                            ${user.nombre}
                         </label>
                     </div>
                 `;
