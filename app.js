@@ -723,48 +723,54 @@ function prepararEdicion(idTarea, origen = 'list-section') {
     document.getElementById("parte").value = textoLimpio; 
     
     //--> v14 ACTUALIZADO CON FILTRO FLEXIBLE (ID / NOMBRE Y MINÚSCULAS)
-    //--> v14 v28.1 ACTUALIZADO: Carga inteligente de compañeros (Técnico vs Admin)
+    //--> v14 CORREGIDO: Renderiza a TODOS los miembros del equipo (marcados y no marcados)
+    //->v28.2
     const contenedorComp = document.getElementById("contenedorCompaneros");
     if (contenedorComp) {
-        // 1. Determinar el equipo objetivo:
-        // - Técnico (no admin): SIEMPRE ve a su propio equipo (equipoValidado).
-        // - Admin: Intenta cargar el equipo asignado al parte (tarea.equipo).
+        // 1. Identificar el equipo objetivo
         let equipoTarget = (rolValidado === 'admin' && tarea.equipo) 
             ? tarea.equipo 
             : equipoValidado;
 
-        let eqTargetNorm = (equipoTarget || "").toString().trim().toLowerCase();
+        let eqTargetStr = (equipoTarget || "").toString().trim().toLowerCase();
 
-        // 2. Extraer los correos guardados actualmente en la Columna N
+        // Buscar coincidencia por ID o Nombre de equipo en datosApp.equipos
+        let equipoObj = (datosApp.equipos || []).find(e => 
+            (e.id || "").toString().trim().toLowerCase() === eqTargetStr || 
+            (e.nombre || "").toString().trim().toLowerCase() === eqTargetStr
+        );
+
+        let idEquipoRef = equipoObj ? (equipoObj.id || "").toString().trim().toLowerCase() : eqTargetStr;
+        let nombreEquipoRef = equipoObj ? (equipoObj.nombre || "").toString().trim().toLowerCase() : eqTargetStr;
+
+        // 2. Filtrar TODOS los usuarios que pertenecen a ese equipo
+        let usuariosDelEquipo = (datosApp.usuarios || []).filter(u => {
+            let uEq = (u.equipo || "").toString().trim().toLowerCase();
+            return uEq === idEquipoRef || uEq === nombreEquipoRef || uEq === eqTargetStr;
+        });
+
+        // 3. Extraer los emails de la Columna N (compañeros asignados)
         const companerosGuardados = tarea.companeros 
             ? tarea.companeros.split(';').map(c => c.trim().toLowerCase()).filter(Boolean)
             : [];
 
-        // 3. Buscar usuarios pertenecientes al equipo objetivo
-        let usuariosTarget = (datosApp.usuarios || []).filter(u => {
-            let uEq = (u.equipo || "").toString().trim().toLowerCase();
-            return uEq === eqTargetNorm;
-        });
-
-        // 4. GARANTÍA ADMIN / FALLBACK: Sumar cualquier usuario que ya esté en Columna N 
-        // aunque su nombre de equipo no coincida exactamente.
-        let idsUsuariosTarget = new Set(usuariosTarget.map(u => u.id.toLowerCase()));
-        
+        // 4. Garantía extra: si hay alguien guardado en la Columna N de otro equipo, lo sumamos a la lista
+        let setIds = new Set(usuariosDelEquipo.map(u => (u.id || "").trim().toLowerCase()));
         (datosApp.usuarios || []).forEach(u => {
             let uEmail = (u.id || "").toString().trim().toLowerCase();
-            if (companerosGuardados.includes(uEmail) && !idsUsuariosTarget.has(uEmail)) {
-                usuariosTarget.push(u);
-                idsUsuariosTarget.add(uEmail);
+            if (companerosGuardados.includes(uEmail) && !setIds.has(uEmail)) {
+                usuariosDelEquipo.push(u);
+                setIds.add(uEmail);
             }
         });
 
-        // 5. Inyectar checkboxes en el DOM
+        // 5. Dibujar TODOS los usuarios en la pantalla
         contenedorComp.innerHTML = "";
 
-        if (usuariosTarget.length === 0) {
-            contenedorComp.innerHTML = `<p class="text-muted small mb-0">No hay integrantes registrados para el equipo "${equipoTarget}".</p>`;
+        if (usuariosDelEquipo.length === 0) {
+            contenedorComp.innerHTML = `<p class="text-muted small mb-0">No hay integrantes registrados en el equipo "${equipoTarget}".</p>`;
         } else {
-            usuariosTarget.forEach((user, index) => {
+            usuariosDelEquipo.forEach((user, index) => {
                 let emailUser = (user.id || "").trim().toLowerCase();
                 let estaMarcado = companerosGuardados.includes(emailUser);
 
@@ -777,7 +783,7 @@ function prepararEdicion(idTarea, origen = 'list-section') {
                                id="edit_comp_${index}" 
                                ${estaMarcado ? 'checked' : ''}>
                         <label class="form-check-label small" for="edit_comp_${index}">
-                            ${user.nombre}
+                            ${user.nombre} <span class="text-muted">(${user.equipo})</span>
                         </label>
                     </div>
                 `;
@@ -852,7 +858,8 @@ function prepararEdicion(idTarea, origen = 'list-section') {
 
 // Navegación inteligente al cancelar/terminar de editar
 // --- NUEVAS FUNCIONES DE NAVEGACIÓN Y LIMPIEZA ---
-function limpiarFormulario() {
+/*función antigua
+/*function limpiarFormulario() {
     modoEdicionId = null; // Apagamos el modo edición
     
     document.getElementById("formularioTareas").reset();
@@ -875,8 +882,46 @@ function limpiarFormulario() {
             btnVolver.innerHTML = '<i class="bi bi-arrow-left"></i> Volver al menú';
             btnVolver.setAttribute("onclick", "limpiarFormulario(); navegarA('menu-section')");
         }
-}
+}*/
+//v28.2 -->
+function limpiarFormulario() {
+    // 1. Salir del modo edición
+    modoEdicionId = null;
 
+    // 2. Resetear el formulario estándar HTML
+    const form = document.getElementById("formularioTareas");
+    if (form) form.reset();
+
+    // 3. Resetear el selector de cliente/lugar (si usa TomSelect)
+    let selectLugar = document.getElementById("lugar");
+    if (selectLugar && selectLugar.tomselect) {
+        selectLugar.tomselect.clear();
+    }
+
+    // 4. Limpiar visores y valores ocultos de FOTO 1 y FOTO 2
+    if (typeof quitarImagenPrevia === "function") quitarImagenPrevia();
+    if (typeof quitarImagenPrevia2 === "function") quitarImagenPrevia2();
+
+    const inputImgUrl1 = document.getElementById("imagen_actual_url");
+    const inputImgUrl2 = document.getElementById("imagen_actual_url2");
+    if (inputImgUrl1) inputImgUrl1.value = "";
+    if (inputImgUrl2) inputImgUrl2.value = "";
+
+    // 5. Restaurar títulos y botones para modo "Crear Parte"
+    const cardTitle = document.querySelector("#form-section .card-title");
+    const btnEnviar = document.getElementById("btnEnviarParte");
+    if (cardTitle) cardTitle.innerText = "Registrar Parte";
+    if (btnEnviar) btnEnviar.innerHTML = '<i class="bi bi-send"></i> Guardar Parte';
+
+    // 6. Resetear compañeros al estado por defecto para un nuevo parte (equipo del usuario logueado)
+    if (typeof cargarCompanerosIniciales === "function") {
+        cargarCompanerosIniciales(); 
+    } else {
+        // En caso de no tener función dedicada, desmarcamos todos los checkboxes
+        document.querySelectorAll("#contenedorCompaneros input[type='checkbox']").forEach(chk => chk.checked = false);
+    }
+}
+//<-- v28.2
 function accionVolver() {
     if (modoEdicionId) {
         // Si estábamos modificando: Limpiamos, repintamos las tareas y vamos al listado
