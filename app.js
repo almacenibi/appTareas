@@ -1359,7 +1359,8 @@ document.getElementById("formularioAdmin").addEventListener("submit", function(e
 });
 //<-- v27*/
 
-//**PAYLOADDDDDDDD**//
+//**PAYLOADDDDDDDD**// -> Retiro para pasar a v29 y tener copia
+/*
 //--> v27.3 lógica para enviar al backend del admin
 document.getElementById("formularioAdmin").addEventListener("submit", async function(e) {
     e.preventDefault();
@@ -1374,7 +1375,7 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
     let stringCompaneros = nodosCompaneros.map(cb => cb.value).join(";");
     let usuarioAsignado = nodosCompaneros[0].getAttribute("data-id");
     */
-
+    /**
     // En el submit de formularioAdmin:
     let nodosCompaneros = Array.from(document.querySelectorAll(".check-companero:checked"));
     if (nodosCompaneros.length === 0) {
@@ -1510,3 +1511,150 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
     } //<-- v27.3 
 });
 //<--v27.3 - modificado para enviar al backend, si algo falla revisar código
+*/
+//** - FORMULARIO ADMIN V29 */
+//--> v29 - Formulario Admin Submit (Búsqueda robusta de IDs para Origen y Solicitante)
+document.getElementById("formularioAdmin").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    // 1. Captura de Compañeros y Usuario Asignado
+    let nodosCompaneros = Array.from(document.querySelectorAll(".check-companero:checked"));
+    if (nodosCompaneros.length === 0) {
+        alert("Debes asignar al menos un compañero de equipo al parte.");
+        return; 
+    }
+
+    let stringCompaneros = nodosCompaneros.map(cb => cb.value).join(";");
+    let usuarioAsignado = nodosCompaneros[0].value; // Primer email como técnico principal
+
+    // 2. Función Helper para extraer el ID exacto evitando fallos de mayúsculas/espacios o formatos "Nombre - ID"
+    const obtenerIdReg = (valorInput, lista) => {
+        if (!valorInput || !lista) return valorInput || "";
+        let textoLimpio = valorInput.trim().toLowerCase();
+
+        // Búsqueda directa por Nombre o ID
+        let encontrado = lista.find(item => 
+            (item.nombre && item.nombre.trim().toLowerCase() === textoLimpio) ||
+            (item.id && item.id.trim().toLowerCase() === textoLimpio)
+        );
+        if (encontrado) return encontrado.id;
+
+        // Búsqueda en formato compuesto ("Nombre - ID" o "ID - Nombre")
+        if (valorInput.includes(" - ")) {
+            let partes = valorInput.split(" - ").map(p => p.trim().toLowerCase());
+            encontrado = lista.find(item => 
+                partes.includes((item.nombre || "").trim().toLowerCase()) ||
+                partes.includes((item.id || "").trim().toLowerCase())
+            );
+            if (encontrado) return encontrado.id;
+        }
+
+        return valorInput.trim(); // Retorna el valor si es un registro manual nuevo
+    };
+
+    // 3. Resolución de IDs para Origen (Col Q) y Solicitante (Col R)
+    let valUbicacion = document.getElementById("admin_ubicacion") ? document.getElementById("admin_ubicacion").value : "";
+    let valSolicitante = document.getElementById("admin_idSolicitante") ? document.getElementById("admin_idSolicitante").value : "";
+
+    let idUbicacionFinal = obtenerIdReg(valUbicacion, datosApp.ubicaciones || datosApp.origenes);
+    let idSolicitanteFinal = obtenerIdReg(valSolicitante, datosApp.solicitantes);
+
+    // 4. Captura de Actuaciones / Etiquetas
+    let etiquetasArray = Array.from(document.querySelectorAll(".check-actuacion:checked")).map(cb => cb.value);
+    let stringEtiquetas = etiquetasArray.join(";");
+
+    // 5. Lectura de Imágenes
+    const leerImagenBase64 = (inputId) => {
+        return new Promise((resolve) => {
+            let input = document.getElementById(inputId);
+            if (input && input.files.length > 0) {
+                let reader = new FileReader();
+                reader.onload = () => resolve({
+                    base64: reader.result.split(',')[1],
+                    mime: input.files[0].type,
+                    nombre: input.files[0].name
+                });
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                resolve(null);
+            }
+        });
+    };
+
+    let img1 = await leerImagenBase64("admin_imagen");
+    let img2 = await leerImagenBase64("admin_imagen2");
+
+    // 6. UI: Estado de carga
+    const btnSubmit = document.getElementById("btnEnviarAdmin");
+    const textoOriginalBtn = btnSubmit.innerHTML;
+    btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando en base de datos...';
+    btnSubmit.disabled = true;
+
+    // 7. Construcción del Payload
+    const payload = {
+        modo: "crear",
+        lugar: document.getElementById("admin_lugar").value,
+        tipo: document.getElementById("admin_tipo").value,
+        estado: document.getElementById("admin_estado").value,
+        descripcion_corta: document.getElementById("admin_descripcion_corta").value,
+        nota: document.getElementById("admin_nota").value,
+        parte: document.getElementById("admin_parte").value,
+        fecha_inicio: document.getElementById("admin_fecha_inicio").value,
+        fecha_fin: document.getElementById("admin_fecha_fin").value,
+        fecha_solicitud: document.getElementById("admin_fecha_solicitud").value, // Col T
+        equipo: document.getElementById("admin_equipo").value, 
+        usuario: usuarioAsignado,
+        companeros: stringCompaneros,
+        asignadoPor: usuarioValidado,
+        idOrigen: idUbicacionFinal,          // Col Q (17) -> ID Resuelto
+        idSolicitante: idSolicitanteFinal,  // Col R (18) -> ID Resuelto
+        etiquetas: stringEtiquetas,          // Col S (19)
+        
+        // Imágenes
+        imagenBase64: img1 ? img1.base64 : "",
+        mimeType: img1 ? img1.mime : "",
+        nombreArchivo: img1 ? img1.nombre : "",
+        imagen2Base64: img2 ? img2.base64 : "",
+        mimeType2: img2 ? img2.mime : "",
+        nombreArchivo2: img2 ? img2.nombre : ""
+    };
+
+    // 8. Envío al Backend
+    try {
+        const urlApi = "https://script.google.com/macros/s/AKfycby_FbRuRypDU8nfaPwoXMshpLGDhmqWrz9P88scCfU8tekKe6RHE4hirbkVX5s-5z4g/exec";
+        
+        let respuesta = await fetch(urlApi, { 
+            method: "POST",
+            redirect: "follow",
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8",
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        let textoCrudo = await respuesta.text(); 
+        let resultado;
+        
+        try {
+            resultado = JSON.parse(textoCrudo);
+        } catch (parseError) {
+            console.error("❌ Respuesta del servidor:", textoCrudo);
+            alert("Error interno en el backend. Revisa las ejecuciones en Apps Script.");
+            return;
+        }
+        
+        if (resultado.estado === "ok") {
+            alert("✅ Parte asignado y guardado correctamente.");
+            document.getElementById("formularioAdmin").reset();
+            navegarA('menu-section'); 
+        } else {
+            alert("❌ Error al guardar: " + resultado.error);
+        }
+    } catch (error) {
+        console.error("❌ Error real de conexión:", error);
+        alert("❌ Error de red o CORS al enviar el parte. Revisa la consola.");
+    } finally {
+        btnSubmit.innerHTML = textoOriginalBtn;
+        btnSubmit.disabled = false;
+    }
+});
