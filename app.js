@@ -721,8 +721,9 @@ function cancelarEdicionYVolver() {
     document.getElementById("btnEnviarParte").innerHTML = '<i class="bi bi-send-check"></i> Enviar Parte';
     navegarA('menu-section');
 }
-
+//**FORMULARIO TAREAS USUARIO Y ADMIN (admin en revisión) */
 // --- 4. ENVÍO AL BACKEND (¡Único evento!) ---
+/*
 document.getElementById("formularioTareas").addEventListener("submit", function(e) {
     e.preventDefault(); 
     
@@ -743,25 +744,6 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     let usuarioAsignado = usuarioValidado; // Por defecto, el idUsuario logueado
     let adminQueAsigna = ""; 
 
-    //v28 --> Construir las variables para recoger los compañeros aunque seas el propio creador
-    // En el submit de formularioTareas:
-    //let companerosTexto = obtenerCompanerosSeleccionados();
-    //<--v28
-
-    /* Versión anteiror v.24
-    if (rolValidado === 'admin') {
-        let valorInput = document.getElementById("admin_tecnico_estandar").value;
-        
-        // Si el texto contiene el guion, extraemos la parte derecha (el email)
-        if (valorInput.includes(" - ")) {
-            usuarioAsignado = valorInput.split(" - ")[1].trim();
-        } else {
-            // Por si acaso el admin escribe el correo directamente a mano
-            usuarioAsignado = valorInput.trim(); 
-        }
-        adminQueAsigna = usuarioValidado; // El correo del admin logueado
-    }
-    */
     //->v28 En el submit de formularioTareas:
     // --- LÓGICA BLINDADA DE COMPAÑEROS (CREAR Y EDITAR) ---
     // 1. Recoger lo seleccionado en los checkboxes
@@ -789,9 +771,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
 
     
     //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
- 
-
-    // 1. Preparamos el paquete BÁSICO (Las fotos nuevas van vacías de momento)
+     // 1. Preparamos el paquete BÁSICO (Las fotos nuevas van vacías de momento)
     const payload = {
         modo: modoEdicionId ? "editar" : "crear", 
         idRegistro: modoEdicionId,
@@ -880,7 +860,174 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     } else {
         procesarImagen2(); // No hay foto 1, saltamos a revisar la 2.
     }
+});*/
+
+//** formulario tareas usuario y admin v30 */
+// --- 4. ENVÍO AL BACKEND (¡Único evento!) ---
+document.getElementById("formularioTareas").addEventListener("submit", function(e) {
+    e.preventDefault(); 
+    
+    const btnEnviar = document.getElementById("btnEnviarParte");
+    btnEnviar.disabled = true;
+    btnEnviar.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+
+    const fInicio = new Date(document.getElementById("fecha_inicio").value);
+    const fFin = new Date(document.getElementById("fecha_fin").value);
+    const diffTiempo = Math.abs(fFin - fInicio);
+    const dias = Math.ceil(diffTiempo / (1000 * 60 * 60 * 24)) + 1; 
+    
+    const fechaHoy = new Date().toLocaleDateString('es-ES');
+    const textoParteFinal = `[${fechaHoy} | ${dias} Días] - ${document.getElementById("parte").value}`;
+    
+    //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTÁNDAR
+    let usuarioAsignado = usuarioValidado; // Por defecto, el idUsuario logueado
+    let adminQueAsigna = ""; 
+
+    if (rolValidado === 'admin') {
+        let elInputAdmin = document.getElementById("admin_tecnico_estandar");
+        if (elInputAdmin && elInputAdmin.value) {
+            let valorInput = elInputAdmin.value;
+            if (valorInput.includes(" - ")) {
+                usuarioAsignado = valorInput.split(" - ")[1].trim();
+            } else {
+                usuarioAsignado = valorInput.trim(); 
+            }
+            adminQueAsigna = usuarioValidado;
+        }
+    }
+
+    // --- LÓGICA BLINDADA DE COMPAÑEROS (CREAR Y EDITAR) ---
+    let seleccionados = obtenerCompanerosSeleccionados(); 
+    let listaComp = seleccionados 
+        ? seleccionados.split(';').map(e => e.trim()).filter(Boolean) 
+        : [];
+
+    let emailEditor = (usuarioValidado || "").trim().toLowerCase();
+
+    if (emailEditor) {
+        let yaIncluido = listaComp.some(e => e.toLowerCase() === emailEditor);
+        if (!yaIncluido) {
+            listaComp.unshift(emailEditor);
+        }
+    }
+
+    let companerosTexto = listaComp.join(';');
+
+    // --- CONSERVACIÓN DE DATOS DE ADMIN (CREAR VS EDITAR) ---
+    let tareaExistente = null;
+    if (modoEdicionId) {
+        tareaExistente = datosApp.tareas.find(t => t.id === modoEdicionId);
+    }
+
+    // Asignación condicional de campos Admin
+    let valAsignadoPor = modoEdicionId 
+        ? (tareaExistente ? (tareaExistente.asignadoPor || "") : "")
+        : (adminQueAsigna || "almacen.ibi@gmail.com");
+
+    let valIdOrigen = modoEdicionId 
+        ? (tareaExistente ? (tareaExistente.idOrigen || "") : "")
+        : "16";
+
+    let valIdSolicitante = modoEdicionId 
+        ? (tareaExistente ? (tareaExistente.idSolicitante || "") : "")
+        : "167";
+
+    let valEtiquetas = modoEdicionId 
+        ? (tareaExistente ? (tareaExistente.etiquetas || "") : "")
+        : "";
+
+    let valFechaSolicitud = modoEdicionId 
+        ? (tareaExistente ? (tareaExistente.fecha_solicitud || "") : "")
+        : "";
+
+    let valNota = modoEdicionId 
+        ? (tareaExistente ? (tareaExistente.nota || "") : "")
+        : "";
+
+    // 1. Preparamos el paquete BÁSICO
+    const payload = {
+        modo: modoEdicionId ? "editar" : "crear", 
+        idRegistro: modoEdicionId,
+        lugar: document.getElementById("lugar").value,
+        tipo: document.getElementById("tipo").value,
+        estado: document.getElementById("estado").value,
+        descripcion_corta: document.getElementById("descripcion_corta").value,
+        fecha_inicio: document.getElementById("fecha_inicio").value,
+        fecha_fin: document.getElementById("fecha_fin").value,
+        parte: textoParteFinal,
+        
+        usuario: usuarioAsignado,
+        asignadoPor: valAsignadoPor,
+        equipo: equipoValidado,
+        companeros: companerosTexto,
+        
+        // Campos Admin conservados en edición o con valores por defecto al crear
+        nota: valNota,
+        idOrigen: valIdOrigen,
+        idSolicitante: valIdSolicitante,
+        etiquetas: valEtiquetas,
+        fecha_solicitud: valFechaSolicitud,
+        
+        // Datos para Foto 1 (Previa)
+        imagenBase64: "",
+        mimeType: "",
+        nombreArchivo: "",
+        imagen_actual_url: document.getElementById("imagen_actual_url").value, 
+        
+        // Datos para Foto 2 (Posterior)
+        imagen2Base64: "",
+        mimeType2: "",
+        nombreArchivo2: "",
+        imagen_actual_url2: document.getElementById("imagen_actual_url2").value
+    };
+
+    // 2. Preparamos el nombre base para los archivos
+    const idLugarSelec = document.getElementById("lugar").value;
+    const clienteObj = datosApp.clientes.find(c => c.id === idLugarSelec);
+    const nombreLugar = clienteObj ? clienteObj.nombre : "Lugar";
+    const lugarNormalizado = nombreLugar.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "_").replace(/_+/g, "_");
+
+    const inputImagen = document.getElementById("imagen");
+    const inputImagen2 = document.getElementById("imagen2");
+
+    // --- LÓGICA EN CASCADA PARA LEER FOTOS ---
+    function enviarPeticionFinal() {
+        enviarAlBackend(payload, btnEnviar);
+    }
+
+    function procesarImagen2() {
+        if (inputImagen2 && inputImagen2.files.length > 0) {
+            const archivo2 = inputImagen2.files[0];
+            const reader2 = new FileReader();
+            reader2.onload = function(evento2) {
+                const nombreOriginalLimpio2 = archivo2.name.replace(/[^a-zA-Z0-9.]/g, "_").replace(/_+/g, "_");
+                payload.imagen2Base64 = evento2.target.result.split(',')[1];
+                payload.mimeType2 = archivo2.type;
+                payload.nombreArchivo2 = lugarNormalizado + "_" + nombreOriginalLimpio2 + "_POST";
+                enviarPeticionFinal();
+            };
+            reader2.readAsDataURL(archivo2);
+        } else {
+            enviarPeticionFinal();
+        }
+    }
+
+    if (inputImagen && inputImagen.files.length > 0) {
+        const archivo = inputImagen.files[0];
+        const reader = new FileReader();
+        reader.onload = function(evento) {
+            const nombreOriginalLimpio = archivo.name.replace(/[^a-zA-Z0-9.]/g, "_").replace(/_+/g, "_");
+            payload.imagenBase64 = evento.target.result.split(',')[1];
+            payload.mimeType = archivo.type;
+            payload.nombreArchivo = lugarNormalizado + "_" + nombreOriginalLimpio + "_PRE";
+            procesarImagen2();
+        };
+        reader.readAsDataURL(archivo);
+    } else {
+        procesarImagen2();
+    }
 });
+/*v30*/
 
 function enviarAlBackend(payload, btn) {
     fetch(API_URL, {
