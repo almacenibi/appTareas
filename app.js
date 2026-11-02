@@ -864,6 +864,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
 
 //** formulario tareas usuario y admin v30 */
 // --- 4. ENVÍO AL BACKEND (¡Único evento!) ---
+// --- 4. ENVÍO AL BACKEND (¡Único evento!) ---
 document.getElementById("formularioTareas").addEventListener("submit", function(e) {
     e.preventDefault(); 
     
@@ -879,7 +880,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     const fechaHoy = new Date().toLocaleDateString('es-ES');
     const textoParteFinal = `[${fechaHoy} | ${dias} Días] - ${document.getElementById("parte").value}`;
     
-    //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTÁNDAR
+    //-- V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTÁNDAR
     let usuarioAsignado = usuarioValidado; // Por defecto, el idUsuario logueado
     let adminQueAsigna = ""; 
 
@@ -913,36 +914,37 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
 
     let companerosTexto = listaComp.join(';');
 
-    // --- CONSERVACIÓN DE DATOS DE ADMIN (CREAR VS EDITAR) ---
+    // --- BÚSQUEDA ROBUSTA DE TAREA EXISTENTE (CONSERVACIÓN DE CAMPOS EN EDICIÓN) ---
     let tareaExistente = null;
     if (modoEdicionId) {
-        tareaExistente = datosApp.tareas.find(t => t.id === modoEdicionId);
+        // Conversión a String para evitar fallos de tipo (número vs texto)
+        tareaExistente = (datosApp.tareas || []).find(t => String(t.id) === String(modoEdicionId));
     }
 
-    // Asignación condicional de campos Admin
-    let valAsignadoPor = modoEdicionId 
-        ? (tareaExistente ? (tareaExistente.asignadoPor || "") : "")
-        : (adminQueAsigna || "almacen.ibi@gmail.com");
+    let valAsignadoPor = "";
+    let valIdOrigen = "";
+    let valIdSolicitante = "";
+    let valEtiquetas = "";
+    let valFechaSolicitud = "";
+    let valNota = "";
 
-    let valIdOrigen = modoEdicionId 
-        ? (tareaExistente ? (tareaExistente.idOrigen || "") : "")
-        : "16";
-
-    let valIdSolicitante = modoEdicionId 
-        ? (tareaExistente ? (tareaExistente.idSolicitante || "") : "")
-        : "167";
-
-    let valEtiquetas = modoEdicionId 
-        ? (tareaExistente ? (tareaExistente.etiquetas || "") : "")
-        : "";
-
-    let valFechaSolicitud = modoEdicionId 
-        ? (tareaExistente ? (tareaExistente.fecha_solicitud || "") : "")
-        : "";
-
-    let valNota = modoEdicionId 
-        ? (tareaExistente ? (tareaExistente.nota || "") : "")
-        : "";
+    if (modoEdicionId && tareaExistente) {
+        // MODO EDICIÓN: Conservar SIEMPRE los valores existentes en BD (con aliases de resguardo)
+        valAsignadoPor = tareaExistente.asignadoPor || tareaExistente.asignado_por || "";
+        valIdOrigen = tareaExistente.idOrigen || tareaExistente.origen || "";
+        valIdSolicitante = tareaExistente.idSolicitante || tareaExistente.solicitante || "";
+        valEtiquetas = tareaExistente.etiquetas || "";
+        valFechaSolicitud = tareaExistente.fecha_solicitud || tareaExistente.fechaSolicitud || "";
+        valNota = tareaExistente.nota || "";
+    } else {
+        // MODO CREACIÓN: Valores por defecto asignados
+        valAsignadoPor = adminQueAsigna || "almacen.ibi@gmail.com";
+        valIdOrigen = "16";
+        valIdSolicitante = "167";
+        valEtiquetas = "";
+        valFechaSolicitud = "";
+        valNota = "";
+    }
 
     // 1. Preparamos el paquete BÁSICO
     const payload = {
@@ -961,7 +963,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         equipo: equipoValidado,
         companeros: companerosTexto,
         
-        // Campos Admin conservados en edición o con valores por defecto al crear
+        // Campos de administración blindados
         nota: valNota,
         idOrigen: valIdOrigen,
         idSolicitante: valIdSolicitante,
@@ -1027,7 +1029,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         procesarImagen2();
     }
 });
-/*v30*/
+/*<--v30*/
 
 function enviarAlBackend(payload, btn) {
     fetch(API_URL, {
