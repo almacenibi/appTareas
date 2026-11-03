@@ -293,6 +293,15 @@ function formatoFechaCorta(fechaStr) {
     return fechaLimpia;
 }
 
+//->>v31
+// Carga las opciones de Origen y Solicitante en los selects de la sección metadatos
+function cargarSelectsMetadatos() {
+    if (typeof cargarSelect === "function") {
+        cargarSelect("meta_idOrigen", datosApp.ubicaciones || datosApp.origenes || []);
+        cargarSelect("meta_idSolicitante", datosApp.solicitantes || []);
+    }
+}
+//<--
 // --- MOTOR DE BÚSQUEDA Y FILTRADO ---
 
 function obtenerMisTareasBase() {
@@ -555,6 +564,7 @@ function renderizarTareas(listaTareas) {
         contenedor.innerHTML = htmlLista;
     }
 
+//-->v31
 function prepararEdicion(idTarea, origen = 'list-section') {
     origenNavegacion = origen;
     const tarea = (datosApp.tareas || []).find(t => String(t.id) === String(idTarea));
@@ -583,20 +593,25 @@ function prepararEdicion(idTarea, origen = 'list-section') {
     }
     document.getElementById("parte").value = textoLimpio; 
 
-    // 2. v31: Inyectar metadatos en la sección visible
+    // 2. Cargar opciones y rellenar la sección Metadatos Administrativos
+    cargarSelectsMetadatos();
+
     document.getElementById("meta_asignadoPor").value = tarea.asignadoPor || tarea.asignado_por || "almacen.ibi@gmail.com";
     document.getElementById("meta_idOrigen").value = tarea.idOrigen || tarea.origen || "16";
     document.getElementById("meta_idSolicitante").value = tarea.idSolicitante || tarea.solicitante || "167";
     document.getElementById("meta_etiquetas").value = tarea.etiquetas || "";
-    document.getElementById("meta_fecha_solicitud").value = convertirAFechaInput(tarea.fecha_solicitud || tarea.fechaSolicitud);
+    
+    // Normalización de la fecha de solicitud con tu función
+    let fSolicitudFormateada = convertirAFechaInput(tarea.fecha_solicitud || tarea.fechaSolicitud);
+    document.getElementById("meta_fecha_solicitud").value = fSolicitudFormateada || convertirAFechaInput(new Date());
+    
     document.getElementById("meta_nota").value = tarea.nota || "";
 
-    // Aplicar estado de edición/desactivación a la sección administrativa según rol
     if (typeof actualizarEstadoSeccionMetadatos === "function") {
         actualizarEstadoSeccionMetadatos();
     }
 
-    // 3. v31: Lógica de compañeros en edición (Admin simula acceso como usuario de Columna K)
+    // 3. Lógica de compañeros (Solución a undefined y carga del equipo)
     const contenedorComp = document.getElementById("contenedorCompaneros");
     if (contenedorComp) {
         let usuarioCreador = tarea.usuario; // Columna K
@@ -611,17 +626,18 @@ function prepararEdicion(idTarea, origen = 'list-section') {
 
         let eqSimNorm = (equipoSimulado || "").toString().trim().toLowerCase();
 
-        // Obtener miembros del equipo simulado
+        // Obtener miembros del equipo correspondiente
         let usuariosDelEquipo = (datosApp.usuarios || []).filter(u => {
             let uEq = (u.equipo || "").toString().trim().toLowerCase();
             return uEq === eqSimNorm;
         });
 
+        // Extraer los emails marcados en la Columna N
         const companerosGuardados = tarea.companeros 
             ? tarea.companeros.split(';').map(c => c.trim().toLowerCase()).filter(Boolean)
             : [];
 
-        // Incluir colaboradores guardados en Col N que pertenezcan a otros equipos
+        // Incluir cualquier usuario que esté en Columna N aunque pertenezca a otro equipo
         let setIds = new Set(usuariosDelEquipo.map(u => (u.id || "").trim().toLowerCase()));
         (datosApp.usuarios || []).forEach(u => {
             let uEmail = (u.id || "").trim().toLowerCase();
@@ -638,6 +654,9 @@ function prepararEdicion(idTarea, origen = 'list-section') {
             usuariosDelEquipo.forEach((user, index) => {
                 let emailUser = (user.id || "").trim().toLowerCase();
                 let estaMarcado = companerosGuardados.includes(emailUser);
+                
+                // Formateo limpio del equipo (evita mostrar undefined)
+                let txtEquipo = user.equipo ? ` (${user.equipo})` : "";
 
                 contenedorComp.innerHTML += `
                     <div class="form-check border bg-white px-3 py-1 rounded shadow-sm contenedor-companero">
@@ -648,7 +667,7 @@ function prepararEdicion(idTarea, origen = 'list-section') {
                                id="edit_comp_${index}" 
                                ${estaMarcado ? 'checked' : ''}>
                         <label class="form-check-label small" for="edit_comp_${index}">
-                            ${user.nombre} <span class="text-muted">(${user.equipo})</span>
+                            ${user.nombre}<span class="text-muted">${txtEquipo}</span>
                         </label>
                     </div>
                 `;
@@ -656,11 +675,10 @@ function prepararEdicion(idTarea, origen = 'list-section') {
         }
     }
 
-    // 4. Lógica original de miniaturas (Foto 1 - Previa)
+    // 4. Miniaturas de Foto 1 (Previa)
     if (tarea.imagen && tarea.imagen.includes("http")) {
         let urlGuardada = tarea.imagen;
         let idArchivo = "";
-
         if (urlGuardada.includes("id=")) {
             idArchivo = urlGuardada.split("id=")[1].split("&")[0];
         } else if (urlGuardada.includes("/file/d/")) {
@@ -674,17 +692,16 @@ function prepararEdicion(idTarea, origen = 'list-section') {
             document.getElementById("imagen_actual_url").value = urlGuardada; 
             document.getElementById("imagen").style.display = "none"; 
         } else {
-            quitarImagenPrevia();
+            if (typeof quitarImagenPrevia === "function") quitarImagenPrevia();
         }
     } else {
-        quitarImagenPrevia();
+        if (typeof quitarImagenPrevia === "function") quitarImagenPrevia();
     }
 
-    // Lógica original de miniaturas (Foto 2 - Posterior)
+    // Miniaturas de Foto 2 (Posterior)
     if (tarea.imagen2 && tarea.imagen2.includes("http")) {
         let urlGuardada2 = tarea.imagen2;
         let idArchivo2 = "";
-
         if (urlGuardada2.includes("id=")) {
             idArchivo2 = urlGuardada2.split("id=")[1].split("&")[0];
         } else if (urlGuardada2.includes("/file/d/")) {
@@ -698,13 +715,13 @@ function prepararEdicion(idTarea, origen = 'list-section') {
             document.getElementById("imagen_actual_url2").value = urlGuardada2; 
             document.getElementById("imagen2").style.display = "none"; 
         } else {
-            quitarImagenPrevia2();
+            if (typeof quitarImagenPrevia2 === "function") quitarImagenPrevia2();
         }
     } else {
-        quitarImagenPrevia2();
+        if (typeof quitarImagenPrevia2 === "function") quitarImagenPrevia2();
     }
 
-    // 5. Textos y botones de navegación
+    // 5. Configuración de interfaz y botones
     document.querySelector("#form-section .card-title").innerText = "Modificar Parte";
     const btnEnviar = document.getElementById("btnEnviarParte");
     if (btnEnviar) {
@@ -725,6 +742,7 @@ function prepararEdicion(idTarea, origen = 'list-section') {
 
     navegarA('form-section');
 }
+//<--v31
 
 // --- v31: RESETEO Y VALORES POR DEFECTO PARA NUEVAS TAREAS ---
 function limpiarFormulario() {
@@ -750,17 +768,20 @@ function limpiarFormulario() {
     if (cardTitle) cardTitle.innerText = "Registrar Parte";
     if (btnEnviar) btnEnviar.innerHTML = '<i class="bi bi-send"></i> Guardar Parte';
 
-    // VALORES POR DEFECTO REQUERIDOS EN v31
-    const hoyISO = new Date().toISOString().split('T')[0];
-    document.getElementById("meta_fecha_solicitud").value = hoyISO;
+    // Cargar opciones en los selectores de metadatos
+    cargarSelectsMetadatos();
+
+    // Asignar valores por defecto al crear nueva tarea usando tu función
+    document.getElementById("meta_fecha_solicitud").value = convertirAFechaInput(new Date());
     document.getElementById("meta_idOrigen").value = "16";
     document.getElementById("meta_idSolicitante").value = "167";
     document.getElementById("meta_asignadoPor").value = "almacen.ibi@gmail.com";
     document.getElementById("meta_etiquetas").value = "";
     document.getElementById("meta_nota").value = "";
 
-    // Aplicar permisos según rol
-    actualizarEstadoSeccionMetadatos();
+    if (typeof actualizarEstadoSeccionMetadatos === "function") {
+        actualizarEstadoSeccionMetadatos();
+    }
 
     // Cargar compañeros correspondientes
     cargarCompanerosEquipo();
@@ -963,7 +984,6 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     const fechaHoy = new Date().toLocaleDateString('es-ES');
     const textoParteFinal = `[${fechaHoy} | ${dias} Días] - ${document.getElementById("parte").value}`;
     
-    // Determinar usuario asignado y si lo asigna un Admin
     let usuarioAsignado = usuarioValidado; 
     let adminQueAsigna = ""; 
 
@@ -976,7 +996,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         }
     }
 
-    // Lógica blindada de compañeros (Editor + Seleccionados)
+    // Lista de compañeros (Editor + Seleccionados)
     let seleccionados = obtenerCompanerosSeleccionados(); 
     let listaComp = seleccionados 
         ? seleccionados.split(';').map(e => e.trim()).filter(Boolean) 
@@ -988,8 +1008,13 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     }
     let companerosTexto = listaComp.join(';');
 
-    // Lectura de Metadatos desde los inputs de la sección HTML
-    let asignadoPorFinal = adminQueAsigna || document.getElementById("meta_asignadoPor").value || "almacen.ibi@gmail.com";
+    // LECTURA DIRECTA DESDE LA SECCIÓN DE METADATOS
+    let valAsignadoPor = adminQueAsigna || document.getElementById("meta_asignadoPor").value || "almacen.ibi@gmail.com";
+    let valIdOrigen = document.getElementById("meta_idOrigen").value || "16";
+    let valIdSolicitante = document.getElementById("meta_idSolicitante").value || "167";
+    let valEtiquetas = document.getElementById("meta_etiquetas").value || "";
+    let valFechaSolicitud = document.getElementById("meta_fecha_solicitud").value || "";
+    let valNota = document.getElementById("meta_nota").value || "";
 
     const payload = {
         modo: modoEdicionId ? "editar" : "crear", 
@@ -1003,16 +1028,16 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         parte: textoParteFinal,
         
         usuario: usuarioAsignado,
-        asignadoPor: asignadoPorFinal,
+        asignadoPor: valAsignadoPor,
         equipo: equipoValidado,
         companeros: companerosTexto,
         
-        // Metadatos v31
-        nota: document.getElementById("meta_nota").value,
-        idOrigen: document.getElementById("meta_idOrigen").value || "16",
-        idSolicitante: document.getElementById("meta_idSolicitante").value || "167",
-        etiquetas: document.getElementById("meta_etiquetas").value,
-        fecha_solicitud: document.getElementById("meta_fecha_solicitud").value,
+        // Metadatos (Col F, Q, R, S, T)
+        nota: valNota,
+        idOrigen: valIdOrigen,
+        idSolicitante: valIdSolicitante,
+        etiquetas: valEtiquetas,
+        fecha_solicitud: valFechaSolicitud,
         
         // Fotos
         imagenBase64: "",
@@ -1035,7 +1060,6 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     const inputImagen = document.getElementById("imagen");
     const inputImagen2 = document.getElementById("imagen2");
 
-    // Lógica en cascada para imágenes y envío al backend
     function enviarPeticionFinal() {
         enviarAlBackend(payload, btnEnviar);
     }
