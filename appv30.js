@@ -1008,13 +1008,51 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     }
     let companerosTexto = listaComp.join(';');
 
-    // LECTURA DIRECTA DESDE LA SECCIÓN DE METADATOS
-    let valAsignadoPor = adminQueAsigna || document.getElementById("meta_asignadoPor").value || "almacen.ibi@gmail.com";
-    let valIdOrigen = document.getElementById("meta_idOrigen").value || "16";
-    let valIdSolicitante = document.getElementById("meta_idSolicitante").value || "167";
-    let valEtiquetas = document.getElementById("meta_etiquetas").value || "";
-    let valFechaSolicitud = document.getElementById("meta_fecha_solicitud").value || "";
-    let valNota = document.getElementById("meta_nota").value || "";
+    // =========================================================================
+    // RESOLUCIÓN DE METADATOS: CONSERVAR HISTÓRICO EN EDICIÓN VS VALORES POR DEFECTO EN CREACIÓN
+    // =========================================================================
+    let valAsignadoPor = "";
+    let valIdOrigen = "";
+    let valIdSolicitante = "";
+    let valEtiquetas = "";
+    let valFechaSolicitud = "";
+    let valNota = "";
+
+    if (modoEdicionId) {
+        // MODO EDICIÓN: Buscar la tarea original en memoria para rescatar sus datos exactos
+        const tareaOriginal = (datosApp.tareas || []).find(t => String(t.id) === String(modoEdicionId));
+        
+        // Elementos DOM (por si existieran en la vista)
+        const elAsignado = document.getElementById("meta_asignadoPor");
+        const elOrigen = document.getElementById("meta_idOrigen");
+        const elSolicitante = document.getElementById("meta_idSolicitante");
+        const elEtiquetas = document.getElementById("meta_etiquetas");
+        const elFechaSol = document.getElementById("meta_fecha_solicitud");
+        const elNota = document.getElementById("meta_nota");
+
+        valAsignadoPor = adminQueAsigna || (elAsignado && elAsignado.value ? elAsignado.value : (tareaOriginal ? (tareaOriginal.asignadoPor || tareaOriginal.asignado_por || "") : "almacen.ibi@gmail.com"));
+        valIdOrigen = (elOrigen && elOrigen.value ? elOrigen.value : (tareaOriginal ? (tareaOriginal.idOrigen || tareaOriginal.origen || "") : "16"));
+        valIdSolicitante = (elSolicitante && elSolicitante.value ? elSolicitante.value : (tareaOriginal ? (tareaOriginal.idSolicitante || tareaOriginal.solicitante || "") : "167"));
+        valEtiquetas = (elEtiquetas && elEtiquetas.value ? elEtiquetas.value : (tareaOriginal ? (tareaOriginal.etiquetas || "") : ""));
+        valFechaSolicitud = (elFechaSol && elFechaSol.value ? elFechaSol.value : (tareaOriginal ? (tareaOriginal.fecha_solicitud || tareaOriginal.fechaSolicitud || "") : ""));
+        valNota = (elNota && elNota.value ? elNota.value : (tareaOriginal ? (tareaOriginal.nota || "") : ""));
+
+    } else {
+        // MODO CREACIÓN: Asignar valores por defecto para un nuevo parte
+        const elAsignado = document.getElementById("meta_asignadoPor");
+        const elOrigen = document.getElementById("meta_idOrigen");
+        const elSolicitante = document.getElementById("meta_idSolicitante");
+        const elEtiquetas = document.getElementById("meta_etiquetas");
+        const elFechaSol = document.getElementById("meta_fecha_solicitud");
+        const elNota = document.getElementById("meta_nota");
+
+        valAsignadoPor = adminQueAsigna || (elAsignado && elAsignado.value ? elAsignado.value : "almacen.ibi@gmail.com");
+        valIdOrigen = (elOrigen && elOrigen.value ? elOrigen.value : "16");
+        valIdSolicitante = (elSolicitante && elSolicitante.value ? elSolicitante.value : "167");
+        valEtiquetas = (elEtiquetas && elEtiquetas.value ? elEtiquetas.value : "");
+        valFechaSolicitud = (elFechaSol && elFechaSol.value ? elFechaSol.value : new Date().toISOString().split('T')[0]);
+        valNota = (elNota && elNota.value ? elNota.value : "");
+    }
 
     const payload = {
         modo: modoEdicionId ? "editar" : "crear", 
@@ -1032,7 +1070,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         equipo: equipoValidado,
         companeros: companerosTexto,
         
-        // Metadatos (Col F, Q, R, S, T)
+        // Metadatos protegidos
         nota: valNota,
         idOrigen: valIdOrigen,
         idSolicitante: valIdSolicitante,
