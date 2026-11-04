@@ -1009,51 +1009,69 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     let companerosTexto = listaComp.join(';');
 
     // =========================================================================
-    // RESOLUCIÓN DE METADATOS: CONSERVAR HISTÓRICO EN EDICIÓN VS VALORES POR DEFECTO EN CREACIÓN
+    // 1. BÚSQUEDA ROBUSTA DE LA TAREA EN BD (Normalizando prefijos de ID)
     // =========================================================================
-    let valAsignadoPor = "";
-    let valIdOrigen = "";
-    let valIdSolicitante = "";
-    let valEtiquetas = "";
-    let valFechaSolicitud = "";
-    let valNota = "";
-
+    let tareaOriginal = null;
     if (modoEdicionId) {
-        // MODO EDICIÓN: Buscar la tarea original en memoria para rescatar sus datos exactos
-        const tareaOriginal = (datosApp.tareas || []).find(t => String(t.id) === String(modoEdicionId));
-        
-        // Elementos DOM (por si existieran en la vista)
-        const elAsignado = document.getElementById("meta_asignadoPor");
-        const elOrigen = document.getElementById("meta_idOrigen");
-        const elSolicitante = document.getElementById("meta_idSolicitante");
-        const elEtiquetas = document.getElementById("meta_etiquetas");
-        const elFechaSol = document.getElementById("meta_fecha_solicitud");
-        const elNota = document.getElementById("meta_nota");
-
-        valAsignadoPor = adminQueAsigna || (elAsignado && elAsignado.value ? elAsignado.value : (tareaOriginal ? (tareaOriginal.asignadoPor || tareaOriginal.asignado_por || "") : "almacen.ibi@gmail.com"));
-        valIdOrigen = (elOrigen && elOrigen.value ? elOrigen.value : (tareaOriginal ? (tareaOriginal.idOrigen || tareaOriginal.origen || "") : "16"));
-        valIdSolicitante = (elSolicitante && elSolicitante.value ? elSolicitante.value : (tareaOriginal ? (tareaOriginal.idSolicitante || tareaOriginal.solicitante || "") : "167"));
-        valEtiquetas = (elEtiquetas && elEtiquetas.value ? elEtiquetas.value : (tareaOriginal ? (tareaOriginal.etiquetas || "") : ""));
-        valFechaSolicitud = (elFechaSol && elFechaSol.value ? elFechaSol.value : (tareaOriginal ? (tareaOriginal.fecha_solicitud || tareaOriginal.fechaSolicitud || "") : ""));
-        valNota = (elNota && elNota.value ? elNota.value : (tareaOriginal ? (tareaOriginal.nota || "") : ""));
-
-    } else {
-        // MODO CREACIÓN: Asignar valores por defecto para un nuevo parte
-        const elAsignado = document.getElementById("meta_asignadoPor");
-        const elOrigen = document.getElementById("meta_idOrigen");
-        const elSolicitante = document.getElementById("meta_idSolicitante");
-        const elEtiquetas = document.getElementById("meta_etiquetas");
-        const elFechaSol = document.getElementById("meta_fecha_solicitud");
-        const elNota = document.getElementById("meta_nota");
-
-        valAsignadoPor = adminQueAsigna || (elAsignado && elAsignado.value ? elAsignado.value : "almacen.ibi@gmail.com");
-        valIdOrigen = (elOrigen && elOrigen.value ? elOrigen.value : "16");
-        valIdSolicitante = (elSolicitante && elSolicitante.value ? elSolicitante.value : "167");
-        valEtiquetas = (elEtiquetas && elEtiquetas.value ? elEtiquetas.value : "");
-        valFechaSolicitud = (elFechaSol && elFechaSol.value ? elFechaSol.value : new Date().toISOString().split('T')[0]);
-        valNota = (elNota && elNota.value ? elNota.value : "");
+        let idLimpio = String(modoEdicionId).trim().toLowerCase().replace(/^id\s*/, "");
+        tareaOriginal = (datosApp.tareas || []).find(t => {
+            let tIdLimpio = String(t.id || "").trim().toLowerCase().replace(/^id\s*/, "");
+            return tIdLimpio === idLimpio;
+        });
     }
 
+    // =========================================================================
+    // 2. RESOLUCIÓN DE METADATOS CON REGLAS DE CONSERVACIÓN Y VALORES POR DEFECTO
+    // =========================================================================
+    // Elementos del DOM (si existen en la vista)
+    const elAsignado = document.getElementById("meta_asignadoPor");
+    const elOrigen = document.getElementById("meta_idOrigen");
+    const elSolicitante = document.getElementById("meta_idSolicitante");
+    const elEtiquetas = document.getElementById("meta_etiquetas");
+    const elFechaSol = document.getElementById("meta_fecha_solicitud");
+    const elNota = document.getElementById("meta_nota");
+
+    // Fecha actual de hoy en formato AAAA-MM-DD
+    const fechaHoyISO = new Date().toISOString().split('T')[0];
+
+    // Columna P: asignadoPor
+    let valAsignadoPor = adminQueAsigna || 
+        (tareaOriginal ? (tareaOriginal.asignadoPor || tareaOriginal.asignado_por || "") : "") || 
+        (elAsignado ? elAsignado.value.trim() : "") || 
+        "almacen.ibi@gmail.com";
+
+    // Columna Q: idOrigen (Por defecto "1")
+    let valIdOrigen = (tareaOriginal ? (tareaOriginal.idOrigen || tareaOriginal.origen || "") : "") || 
+        (elOrigen ? elOrigen.value.trim() : "") || 
+        "1";
+
+    // Columna R: idSolicitante (Por defecto "167")
+    let valIdSolicitante = (tareaOriginal ? (tareaOriginal.idSolicitante || tareaOriginal.solicitante || "") : "") || 
+        (elSolicitante ? elSolicitante.value.trim() : "") || 
+        "167";
+
+    // Columna S: etiquetas (Por defecto "Ejecución")
+    let valEtiquetas = (tareaOriginal ? (tareaOriginal.etiquetas || "") : "") || 
+        (elEtiquetas ? elEtiquetas.value.trim() : "") || 
+        "Ejecución";
+
+    // Columna T: fecha_solicitud (Por defecto Fecha de hoy)
+    let valFechaSolicitud = (tareaOriginal ? (tareaOriginal.fecha_solicitud || tareaOriginal.fechaSolicitud || "") : "") || 
+        (elFechaSol ? elFechaSol.value.trim() : "") || 
+        fechaHoyISO;
+
+    // Columna F: nota
+    let valNota = (elNota && elNota.value.trim() !== "" ? elNota.value.trim() : "") || 
+        (tareaOriginal ? (tareaOriginal.nota || "") : "");
+
+    // Normalizar la fecha de solicitud para asegurar formato de envío
+    if (typeof convertirAFechaInput === "function") {
+        valFechaSolicitud = convertirAFechaInput(valFechaSolicitud) || fechaHoyISO;
+    }
+
+    // =========================================================================
+    // 3. CONSTRUCCIÓN DEL PAYLOAD FINAL
+    // =========================================================================
     const payload = {
         modo: modoEdicionId ? "editar" : "crear", 
         idRegistro: modoEdicionId,
@@ -1070,7 +1088,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         equipo: equipoValidado,
         companeros: companerosTexto,
         
-        // Metadatos protegidos
+        // Metadatos asegurados (Col F, Q, R, S, T)
         nota: valNota,
         idOrigen: valIdOrigen,
         idSolicitante: valIdSolicitante,
