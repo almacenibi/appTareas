@@ -9,9 +9,11 @@ let origenNavegacion = 'list-section';
 // --- 1. NAVEGACIÓN Y CARGA INICIAL ---
 function navegarA(idSeccion) {
     document.querySelectorAll('.app-section').forEach(el => el.style.display = 'none');
-    document.getElementById(idSeccion).style.display = 'block';
+    const secTarget = document.getElementById(idSeccion);
+    if (secTarget) secTarget.style.display = 'block';
     if(idSeccion !== 'login-section' && idSeccion !== 'loading') {
-        document.getElementById('user-header').style.display = 'block';
+        const header = document.getElementById('user-header');
+        if (header) header.style.display = 'block';
     }
 }
 
@@ -39,13 +41,18 @@ function cargarDatosDesdeAPI(esCargaInicial = false, tipo = "todo") {
             if(data.ubicaciones) datosApp.ubicaciones = data.ubicaciones;
 
             if(esCargaInicial) {
-                rellenarDesplegables();
-                configurarFechasPorDefecto();
+                try {
+                    rellenarDesplegables();
+                    configurarFechasPorDefecto();
+                } catch (err) {
+                    console.error("Aviso en la preparación inicial de desplegables:", err);
+                }
                 navegarA('login-section');
             }
         })
         .catch(error => {
-            console.error("Error crítico al cargar datos:", error);
+            console.error("Error crítico al cargar datos desde API:", error);
+            if (esCargaInicial) navegarA('login-section');
         });
 }
 
@@ -71,7 +78,7 @@ function rellenarDesplegables() {
     cargarOpciones("filtro_estado", datosApp.estados);
     cargarOpciones("filtro_tipo", datosApp.tipologias);
 
-    // Cargar selector de equipos para la sección Admin (Col L)
+    // Cargar selector de Equipos para Administración (Col L)
     const selectEquipoAdmin = document.getElementById("meta_equipo");
     if (selectEquipoAdmin) {
         selectEquipoAdmin.innerHTML = '<option value="">Selecciona equipo...</option>';
@@ -83,7 +90,7 @@ function rellenarDesplegables() {
         });
     }
 
-    // Cargar Datalists de Metadatos
+    // Cargar Datalists auxiliares de Metadatos
     const poblarDatalist = (idDatalist, lista) => {
         const dl = document.getElementById(idDatalist);
         if (!dl) return;
@@ -100,26 +107,34 @@ function rellenarDesplegables() {
     poblarDatalist("listaUsuariosAdminForm", datosApp.usuarios);
 
     if (rolValidado && rolValidado.toLowerCase() === "admin") {
-        document.getElementById("zonaFiltrosAdmin").classList.remove("opacity-75");
-        document.getElementById("filtro_usuario").disabled = false;
-        document.getElementById("filtro_equipo").disabled = false;
+        const zFiltros = document.getElementById("zonaFiltrosAdmin");
+        if (zFiltros) zFiltros.classList.remove("opacity-75");
+        
+        const fUser = document.getElementById("filtro_usuario");
+        const fEq = document.getElementById("filtro_equipo");
+        if (fUser) fUser.disabled = false;
+        if (fEq) fEq.disabled = false;
         
         cargarOpciones("filtro_usuario", datosApp.usuarios);
         cargarOpciones("filtro_equipo", datosApp.equipos);
 
-        document.getElementById("filtro_usuario").addEventListener("change", aplicarFiltrosPrincipales);
-        document.getElementById("filtro_equipo").addEventListener("change", aplicarFiltrosPrincipales);
+        if (fUser) fUser.addEventListener("change", aplicarFiltrosPrincipales);
+        if (fEq) fEq.addEventListener("change", aplicarFiltrosPrincipales);
     }
 
-    if (document.getElementById("lugar").tomselect) {
-        document.getElementById("lugar").tomselect.destroy();
-    }
-    new TomSelect("#lugar", { create: false, sortField: { field: "text", direction: "asc" } });
+    if (typeof TomSelect !== "undefined") {
+        let elLugar = document.getElementById("lugar");
+        if (elLugar) {
+            if (elLugar.tomselect) elLugar.tomselect.destroy();
+            new TomSelect("#lugar", { create: false, sortField: { field: "text", direction: "asc" } });
+        }
 
-    if (document.getElementById("filtro_lugar").tomselect) {
-        document.getElementById("filtro_lugar").tomselect.destroy();
+        let elFiltroLugar = document.getElementById("filtro_lugar");
+        if (elFiltroLugar) {
+            if (elFiltroLugar.tomselect) elFiltroLugar.tomselect.destroy();
+            new TomSelect("#filtro_lugar", { create: false, sortField: { field: "text", direction: "asc" } });
+        }
     }
-    new TomSelect("#filtro_lugar", { create: false, sortField: { field: "text", direction: "asc" } });
 
     const contenedorAdminTecnico = document.getElementById("contenedor_admin_selector_tecnico");
     const datalistTecnicos = document.getElementById("listaTecnicosAdmin");
@@ -140,11 +155,10 @@ function rellenarDesplegables() {
     }
 }
 
-// Actualizar visibilidad de la sección Admin y deshabilitado de notas
+// 7. Actualiza estado visual de Notas (5.1) y Sección Admin (7.1)
 function actualizarVisibilidadSeccionAdmin() {
-    const esAdmin = (rolValidado === 'admin');
+    const esAdmin = (rolValidado && rolValidado.toLowerCase() === 'admin');
     
-    // Campo Notas (5.1) -> Desactivado si no es admin
     const inputNota = document.getElementById("meta_nota");
     if (inputNota) {
         inputNota.disabled = !esAdmin;
@@ -155,7 +169,6 @@ function actualizarVisibilidadSeccionAdmin() {
         }
     }
 
-    // Sección Admin (7.1) -> Oculta para usuario normal, visible para admin
     const secAdmin = document.getElementById("seccion_admin_tarea");
     if (secAdmin) {
         if (esAdmin) {
@@ -166,7 +179,7 @@ function actualizarVisibilidadSeccionAdmin() {
     }
 }
 
-// 4. Lógica de Compañeros de Equipo (Técnico vs Admin Emulado)
+// 4. Carga dinámica de Compañeros de Equipo (Soporta emulación de equipo para Admin)
 function cargarCompanerosEquipo(tarea = null) {
     const contenedor = document.getElementById("contenedorCompaneros");
     if (!contenedor) return;
@@ -179,7 +192,7 @@ function cargarCompanerosEquipo(tarea = null) {
         companerosGuardados = tarea.companeros.split(';').map(c => c.trim().toLowerCase()).filter(Boolean);
     }
 
-    // Si es Admin en modo Edición: Emula el equipo del creador (Col K) o de la tarea (Col L)
+    // Si es Admin en modo edición: emula el equipo del usuario creador (Col K) o de la tarea (Col L)
     if (rolValidado === 'admin' && tarea) {
         let usuarioCreador = (datosApp.usuarios || []).find(u => 
             (u.id || "").trim().toLowerCase() === (tarea.usuario || "").trim().toLowerCase()
@@ -189,13 +202,13 @@ function cargarCompanerosEquipo(tarea = null) {
 
     let eqObjNorm = (equipoObjetivo || "").toString().trim().toLowerCase();
 
-    // Obtener miembros del equipo objetivo
+    // Obtener integrantes del equipo objetivo (usando 'extra' como mapeo en datosApp.usuarios)
     let usuariosDelEquipo = (datosApp.usuarios || []).filter(u => {
         let uEq = (u.extra || u.equipo || "").toString().trim().toLowerCase();
         return uEq === eqObjNorm;
     });
 
-    // Añadir colaboradores de otros equipos guardados en la Col N si los hubiera
+    // Sumar colaboradores asignados en Columna N que pertenezcan a otros equipos
     let idsExistentes = new Set(usuariosDelEquipo.map(u => (u.id || "").trim().toLowerCase()));
     (datosApp.usuarios || []).forEach(u => {
         let uEmail = (u.id || "").trim().toLowerCase();
@@ -214,12 +227,11 @@ function cargarCompanerosEquipo(tarea = null) {
         const idCheck = "chk_" + comp.id.replace(/[@.]/g, "_");
         let emailUser = (comp.id || "").trim().toLowerCase();
         let estaMarcado = companerosGuardados.includes(emailUser);
-        let txtEquipo = (comp.extra || comp.equipo) ? ` (${comp.extra || comp.equipo})` : "";
 
         contenedor.innerHTML += `
             <div class="form-check form-check-inline border rounded px-2 py-1 bg-white shadow-sm mb-1 ms-0 me-2">
                 <input class="form-check-input check-companero ms-0 me-2" type="checkbox" id="${idCheck}" value="${comp.id}" ${estaMarcado ? 'checked' : ''}>
-                <label class="form-check-label small" for="${idCheck}">${comp.nombre}<span class="text-muted">${txtEquipo}</span></label>
+                <label class="form-check-label small" for="${idCheck}">${comp.nombre}</label>
             </div>
         `;
     });
@@ -232,14 +244,16 @@ function obtenerCompanerosSeleccionados() {
 
 function configurarFechasPorDefecto() {
     const hoy = new Date().toISOString().split('T')[0];
-    document.getElementById("fecha_inicio").value = hoy;
-    document.getElementById("fecha_fin").value = hoy;
+    const fIni = document.getElementById("fecha_inicio");
+    const fFin = document.getElementById("fecha_fin");
+    if (fIni) fIni.value = hoy;
+    if (fFin) fFin.value = hoy;
 }
 
 // --- 2. LOGIN ---
 document.getElementById("btnLogin").addEventListener("click", function() {
     const emailIngresado = document.getElementById("emailInput").value.trim().toLowerCase();
-    const usuarioEncontrado = datosApp.usuarios.find(u => u.id.toLowerCase() === emailIngresado);
+    const usuarioEncontrado = (datosApp.usuarios || []).find(u => u.id.toLowerCase() === emailIngresado);
 
     if (usuarioEncontrado) {
         usuarioValidado = usuarioEncontrado.id;
@@ -247,7 +261,7 @@ document.getElementById("btnLogin").addEventListener("click", function() {
         rolValidado = usuarioEncontrado.rol || "tecnico"; 
 
         document.getElementById("headerNombre").innerText = usuarioEncontrado.nombre;
-        const equipoObj = datosApp.equipos.find(e => e.id === equipoValidado || e.nombre === equipoValidado);
+        const equipoObj = (datosApp.equipos || []).find(e => e.id === equipoValidado || e.nombre === equipoValidado);
         document.getElementById("headerEquipo").innerText = equipoObj ? equipoObj.nombre : equipoValidado;
         document.getElementById("headerRol").innerText = rolValidado;
         
@@ -303,8 +317,8 @@ function formatoFechaCorta(fechaStr) {
 }
 
 function obtenerMisTareasBase() {
-    if (rolValidado === "admin") return datosApp.tareas;
-    return datosApp.tareas.filter(t => 
+    if (rolValidado === "admin") return datosApp.tareas || [];
+    return (datosApp.tareas || []).filter(t => 
         t.usuario === usuarioValidado || 
         (t.companeros && t.companeros.includes(usuarioValidado))
     );
@@ -557,7 +571,7 @@ function prepararEdicion(idTarea, origen = 'list-section') {
     }
     document.getElementById("parte").value = textoLimpio; 
 
-    // 5.1 Carga de Notas (Col F)
+    // 5.1 Carga de Notas de Gestión (Columna F)
     document.getElementById("meta_nota").value = tarea.nota || "";
 
     // 7. Carga de Metadatos Administrativos
@@ -567,7 +581,7 @@ function prepararEdicion(idTarea, origen = 'list-section') {
     document.getElementById("meta_asignadoPor").value = tarea.asignadoPor || tarea.asignado_por || "almacen.ibi@gmail.com";
     document.getElementById("meta_etiquetas").value = tarea.etiquetas || "";
 
-    // 7.3 Asignación/Visualización de Equipo (Col L)
+    // 7.3 Asignación/Visualización de Equipo (Columna L)
     const selectEquipo = document.getElementById("meta_equipo");
     if (selectEquipo) {
         selectEquipo.value = tarea.equipo || equipoValidado || "";
@@ -575,10 +589,10 @@ function prepararEdicion(idTarea, origen = 'list-section') {
 
     actualizarVisibilidadSeccionAdmin();
 
-    // 4. Cargar compañeros de equipo para el parte
+    // 4. Cargar compañeros de equipo para el parte (Emulando equipo para Admin)
     cargarCompanerosEquipo(tarea);
 
-    // Fotografías previa y posterior
+    // Miniaturas de imágenes (Fotos 1 y 2)
     if(tarea.imagen && tarea.imagen.includes("http")) {
         let urlGuardada = tarea.imagen;
         let idArchivo = "";
@@ -651,7 +665,6 @@ function limpiarFormulario() {
     quitarImagenPrevia();
     quitarImagenPrevia2();
 
-    // Valores por defecto al crear
     const hoyISO = new Date().toISOString().split('T')[0];
     document.getElementById("meta_fecha_solicitud").value = hoyISO;
     document.getElementById("meta_idOrigen").value = "16";
@@ -710,7 +723,7 @@ function cancelarEdicionYVolver() {
     navegarA('menu-section');
 }
 
-// ENVÍO AL BACKEND DEL FORMULARIO DE TAREAS
+// 4. ENVÍO AL BACKEND DEL FORMULARIO DE TAREAS (Blindado para conservar datos)
 document.getElementById("formularioTareas").addEventListener("submit", function(e) {
     e.preventDefault(); 
     
@@ -748,7 +761,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     }
     let companerosTexto = listaComp.join(';');
 
-    // 1. Búsqueda de tarea existente
+    // 1. Búsqueda de tarea existente para conservación de metadatos
     let tareaOriginal = null;
     if (modoEdicionId) {
         let idLimpio = String(modoEdicionId).trim().toLowerCase().replace(/^id\s*/, "");
@@ -1039,7 +1052,7 @@ function exportarPDF() {
     });
 }
 
-// LÓGICA DEL FORMULARIO DE ASIGNACIÓN ADMIN (PANEL ADMIN)
+// FORMULARIO DE ASIGNACIÓN ADMIN
 function inicializarFormularioAdmin() {
     const cargarDatalist = (datalistId, lista) => {
         const datalist = document.getElementById(datalistId);
@@ -1203,7 +1216,7 @@ function abrirFormularioAdmin() {
     navegarA('admin-form-section');
 }
 
-// FORMULARIO ADMIN SUBMIT (V29)
+// SUBMIT FORMULARIO ADMIN (V29)
 document.getElementById("formularioAdmin").addEventListener("submit", async function(e) {
     e.preventDefault();
 
