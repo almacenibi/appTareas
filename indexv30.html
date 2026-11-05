@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>App Registro de Tareas v30.1</title>
+    <title>App Registro de Tareas</title>
     
+    <!-- CSS y Librerías -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -27,14 +28,16 @@
         .menu-icon { font-size: 2.5rem; color: #0d6efd; margin-bottom: 10px; }
         body { background-color: #f4f6f9; }
         .card { border-radius: 12px; border: none; }
-        /* Textarea ampliado para optimizar la vista en dispositivos móviles */
-        #parte { min-height: 180px; font-size: 0.95rem; }
+        
+        /* Ajuste Punto 5.4 - Textarea de Parte más grande para móviles */
+        #parte { min-height: 250px; font-size: 0.95rem; }
     </style>
 </head>
 <body>
 
 <div class="container app-container">
     
+    <!-- CABECERA DE USUARIO -->
     <div id="user-header" class="app-section mb-4 text-end">
         <span class="badge bg-primary rounded-pill px-3 py-2 shadow-sm">
             <i class="bi bi-person-circle me-1"></i> <span id="headerNombre"></span> | <span id="headerEquipo"></span> 
@@ -45,7 +48,7 @@
     <!-- PANTALLA DE CARGA INICIAL -->
     <div id="loading" class="text-center mt-5 app-section">
         <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
-        <p class="mt-3 fw-bold text-secondary">Sincronizando datos v30.1 ...</p>
+        <p class="mt-3 fw-bold text-secondary">Sincronizando datos...</p>
     </div>
 
     <!-- PANTALLA: LOGIN -->
@@ -87,15 +90,6 @@
                     <p class="text-muted small mb-0">Ver tus partes anteriores</p>
                 </div>
             </div>
-
-            <div class="col-12 col-md-6 d-none" id="colMenuAdmin">
-                <div class="card shadow-sm menu-card h-100 p-4 text-center border-warning" onclick="abrirFormularioAdmin()">
-                    <i class="bi bi-person-badge fs-1 text-warning mb-3"></i>
-                    <h5 class="fw-bold text-warning">Asignar Parte</h5>
-                    <p class="text-muted small mb-0">Exclusivo Administración</p>
-                </div>
-            </div>
-
             <div class="col-12 col-md-6">
                 <div class="card shadow-sm menu-card h-100 p-4 text-center" onclick="navegarA('informes-section')">
                     <i class="bi bi-file-earmark-pdf fs-1 text-danger mb-3"></i>
@@ -106,7 +100,7 @@
         </div>
     </div>
 
-    <!-- PANTALLA: FORMULARIO DE PARTES ESTÁNDAR (Con Modo Fantasma Admin) -->
+    <!-- PANTALLA: FORMULARIO DE PARTES -->
     <div id="form-section" class="app-section">
         <button type="button" class="btn btn-outline-secondary mb-3 shadow-sm" onclick="accionVolver()">
             <i class="bi bi-arrow-left"></i> Volver al menú
@@ -118,7 +112,7 @@
                 
                 <form id="formularioTareas">
                     
-                    <!-- INFORMACIÓN PRINCIPAL -->
+                    <!-- PUNTO 3: INFORMACIÓN PRINCIPAL (Intocable) -->
                     <div class="mb-3">
                         <label class="form-label fw-bold">Lugar / Cliente</label>
                         <select id="lugar" required autocomplete="off">
@@ -141,23 +135,28 @@
                         </div>
                     </div>
 
-                    <!-- COMPAÑEROS -->
+                    <!-- PUNTO 4: COMPAÑEROS DE EQUIPO -->
                     <div class="mb-3 p-3 bg-light rounded border">
                         <label class="form-label small fw-bold text-muted"><i class="bi bi-people"></i> COMPAÑEROS DE EQUIPO EN ESTE PARTE</label>
-                        <div id="contenedorCompaneros" class="d-flex flex-wrap gap-2 mt-2"></div>
+                        <div id="contenedorCompaneros" class="d-flex flex-wrap gap-2 mt-2">
+                            <!-- Inyectado por JS (Modo Fantasma para Admin) -->
+                        </div>
                     </div>
 
-                    <!-- INFORMACIÓN DEL TRABAJO -->
+                    <!-- PUNTO 5: INFORMACIÓN DEL TRABAJO -->
+                    <!-- 5.1 Textarea Notas (Col T) - Desactivado por defecto -->
                     <div class="mb-3">
                         <label class="form-label fw-bold text-secondary"><i class="bi bi-journal-text"></i> Notas de Gestión / Instrucciones</label>
-                        <textarea class="form-control bg-light" id="meta_nota" rows="2" placeholder="Notas internas..." disabled></textarea>
+                        <textarea class="form-control" id="meta_nota" rows="2" placeholder="Notas internas de administración..." disabled></textarea>
                     </div>
 
+                    <!-- 5.2 Descripción Corta (Col E) -->
                     <div class="mb-3">
                         <label class="form-label fw-bold">Descripción Corta</label>
                         <input type="text" class="form-control" id="descripcion_corta" maxlength="100" placeholder="Ej: Reparación de luminaria" required>
                     </div>
 
+                    <!-- 5.3 Fechas (Col I y J) -->
                     <div class="row">
                         <div class="col-6 mb-3">
                             <label class="form-label fw-bold">Fecha Inicio</label>
@@ -169,79 +168,82 @@
                         </div>
                     </div>
 
+                    <!-- 5.4 Parte (Col G) -->
                     <div class="mb-3">
                         <label class="form-label fw-bold" id="label_nuevo_parte">Desarrollo del Parte</label>
                         <textarea class="form-control" id="parte" placeholder="Escribe aquí los detalles del trabajo realizado..." required></textarea>
                     </div>
 
-                    <!-- FOTOGRAFÍAS -->
+                    <!-- PUNTO 6: FOTOGRAFÍAS (Intocable) -->
                     <div class="mb-4">
-                        <label class="form-label fw-bold"><i class="bi bi-camera text-primary"></i> Foto Previa (Antes)</label>
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-camera text-primary"></i> Foto Previa (Antes)
+                        </label>
                         <div id="contenedor_mini_imagen" class="mb-2" style="display: none;">
                             <div class="position-relative d-inline-block border rounded p-1">
-                                <img id="mini_imagen_preview" src="" style="max-height: 80px; max-width: 120px; object-fit: cover; opacity: 0.8;">
-                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle p-0" style="width: 24px; height: 24px;" onclick="quitarImagenPrevia()">
+                                <img id="mini_imagen_preview" src="" alt="Imagen" style="max-height: 80px; max-width: 120px; object-fit: cover; opacity: 0.8;">
+                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle p-0" style="width: 24px; height: 24px;" onclick="quitarImagenPrevia()" title="Eliminar imagen actual">
                                     <i class="bi bi-x"></i>
                                 </button>
                             </div>
                             <input type="hidden" id="imagen_actual_url" value="">
+                            <p class="small text-muted mt-1 mb-0">Imagen previa actual. Toca la X para borrarla y subir otra.</p>
                         </div>
                         <input type="file" class="form-control" id="imagen" accept="image/*">
                     </div>
 
                     <div class="mb-4 pt-2 border-top">
-                        <label class="form-label fw-bold"><i class="bi bi-camera-fill text-success"></i> Foto Posterior (Después)</label>
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-camera-fill text-success"></i> Foto Posterior (Después)
+                        </label>
                         <div id="contenedor_mini_imagen2" class="mb-2" style="display: none;">
                             <div class="position-relative d-inline-block border rounded p-1">
-                                <img id="mini_imagen_preview2" src="" style="max-height: 80px; max-width: 120px; object-fit: cover; opacity: 0.8;">
-                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle p-0" style="width: 24px; height: 24px;" onclick="quitarImagenPrevia2()">
+                                <img id="mini_imagen_preview2" src="" alt="Imagen Posterior" style="max-height: 80px; max-width: 120px; object-fit: cover; opacity: 0.8;">
+                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle p-0" style="width: 24px; height: 24px;" onclick="quitarImagenPrevia2()" title="Eliminar imagen actual">
                                     <i class="bi bi-x"></i>
                                 </button>
                             </div>
                             <input type="hidden" id="imagen_actual_url2" value="">
+                            <p class="small text-muted mt-1 mb-0">Imagen posterior actual. Toca la X para borrarla y subir otra.</p>
                         </div>
                         <input type="file" class="form-control" id="imagen2" accept="image/*">
+                        <div class="form-text mt-2"><i class="bi bi-cloud-arrow-up"></i> Las fotos se guardarán en Drive automáticamente.</div>
                     </div>
 
-                    <!-- SECCIÓN EXCLUSIVA ADMIN (Modo Fantasma y Control de Expediente) -->
+                    <!-- PUNTO 7: SECCIÓN ADMIN (Oculta para técnicos) -->
                     <div id="seccion_admin_tarea" class="d-none mb-4 p-3 bg-warning bg-opacity-10 rounded border border-warning-subtle">
-                        <p class="fw-bold text-warning-emphasis mb-3"><i class="bi bi-shield-lock"></i> Controles de Administración del Parte</p>
+                        <p class="fw-bold text-warning-emphasis mb-3"><i class="bi bi-shield-lock"></i> Datos de Administración y Expediente</p>
                         
                         <div class="row g-3">
                             <div class="col-12 col-md-4">
-                                <label class="form-label small fw-bold">Fecha Solicitud</label>
-                                <input type="date" class="form-control form-control-sm border-warning-subtle" id="meta_fecha_solicitud">
+                                <label class="form-label small fw-bold">Asignado Por</label>
+                                <input class="form-control form-control-sm border-warning" list="listaUsuariosAdminForm" id="meta_asignadoPor" placeholder="almacen.ibi@gmail.com" autocomplete="off">
+                                <datalist id="listaUsuariosAdminForm"></datalist>
                             </div>
                             <div class="col-12 col-md-4">
-                                <label class="form-label small fw-bold">Origen / Ubicación</label>
-                                <input class="form-control form-control-sm border-warning-subtle" list="listaOrigenesForm" id="meta_idOrigen" placeholder="Buscar Origen..." autocomplete="off">
+                                <label class="form-label small fw-bold">Origen</label>
+                                <input class="form-control form-control-sm border-warning" list="listaOrigenesForm" id="meta_idOrigen" placeholder="Buscar Origen..." autocomplete="off">
                                 <datalist id="listaOrigenesForm"></datalist>
                             </div>
                             <div class="col-12 col-md-4">
                                 <label class="form-label small fw-bold">Solicitante</label>
-                                <input class="form-control form-control-sm border-warning-subtle" list="listaSolicitantesForm" id="meta_idSolicitante" placeholder="Buscar Solicitante..." autocomplete="off">
+                                <input class="form-control form-control-sm border-warning" list="listaSolicitantesForm" id="meta_idSolicitante" placeholder="Buscar Solicitante..." autocomplete="off">
                                 <datalist id="listaSolicitantesForm"></datalist>
                             </div>
                             <div class="col-12 col-md-4">
-                                <label class="form-label small fw-bold">Asignado Por</label>
-                                <input class="form-control form-control-sm border-warning-subtle" list="listaUsuariosAdminForm" id="meta_asignadoPor" placeholder="almacen.ibi@gmail.com" autocomplete="off">
-                                <datalist id="listaUsuariosAdminForm"></datalist>
+                                <label class="form-label small fw-bold">Etiquetas</label>
+                                <input type="text" class="form-control form-control-sm border-warning" id="meta_etiquetas" placeholder="Ej: Urgente;Reparación">
                             </div>
-                            <div class="col-12 col-md-8">
-                                <label class="form-label small fw-bold">Etiquetas / Actuaciones</label>
-                                <input type="text" class="form-control form-control-sm border-warning-subtle" id="meta_etiquetas" placeholder="Ej: Urgente;Reparación">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-bold">Fecha Solicitud</label>
+                                <input type="date" class="form-control form-control-sm border-warning" id="meta_fecha_solicitud">
                             </div>
                             
-                            <!-- MODO FANTASMA: Reasignar Técnico Principal y Equipo -->
-                            <div class="col-12 col-md-6">
-                                <label class="form-label small fw-bold text-primary">Técnico Principal Creador (Col K)</label>
-                                <input class="form-control form-control-sm border-primary" list="listaTecnicosAdmin" id="admin_tecnico_estandar" placeholder="Buscar técnico..." autocomplete="off">
-                                <datalist id="listaTecnicosAdmin"></datalist>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label class="form-label small fw-bold text-primary">Equipo de Trabajo Asignado (Col L)</label>
+                            <!-- Asignar Equipo (Modo Fantasma Admin) -->
+                            <div class="col-12 col-md-4">
+                                <label class="form-label small fw-bold text-primary">Equipo Asignado (Col L)</label>
                                 <select class="form-select form-select-sm border-primary" id="meta_equipo">
-                                    <option value="">Selecciona equipo de trabajo...</option>
+                                    <option value="">Selecciona equipo...</option>
                                 </select>
                             </div>
                         </div>
@@ -249,119 +251,6 @@
 
                     <button type="submit" class="btn btn-success btn-lg w-100 fw-bold shadow-sm" id="btnEnviarParte">
                         <i class="bi bi-send-check"></i> Enviar Parte
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- PANTALLA: FORMULARIO ASIGNACIÓN ADMIN -->
-    <div id="admin-form-section" class="app-section">
-        <button type="button" class="btn btn-outline-secondary mb-3 shadow-sm" onclick="navegarA('menu-section')">
-            <i class="bi bi-arrow-left"></i> Volver al menú
-        </button>
-
-        <div class="card shadow border-warning">
-            <div class="card-body p-4">
-                <h4 class="card-title fw-bold mb-4 border-bottom border-warning pb-2 text-warning-emphasis">
-                    <i class="bi bi-person-badge"></i> Nueva Asignación de Parte
-                </h4>
-                
-                <form id="formularioAdmin">
-                    <div class="row bg-warning bg-opacity-10 p-3 rounded mb-4 border border-warning-subtle mx-0">
-                        <div class="col-12 col-md-4 mb-3 mb-md-0">
-                            <label class="form-label fw-bold small text-warning-emphasis">Origen</label>
-                            <input class="form-control" list="listaOrigenes" id="admin_idOrigen" placeholder="Buscar origen..." required autocomplete="off">
-                            <datalist id="listaOrigenes"></datalist>
-                        </div>
-                        <div class="col-12 col-md-4 mb-3 mb-md-0">
-                            <label class="form-label fw-bold small text-warning-emphasis">Solicitante</label>
-                            <input class="form-control" list="listaSolicitantes" id="admin_idSolicitante" placeholder="Buscar solicitante..." autocomplete="off">
-                            <datalist id="listaSolicitantes"></datalist>
-                        </div>
-                        <div class="col-12 col-md-4">
-                            <label class="form-label fw-bold small text-warning-emphasis">Asignar a (Equipo)</label>
-                            <input class="form-control border-warning" list="listaEquiposAdmin" id="admin_equipo" placeholder="Buscar equipo..." required autocomplete="off">
-                            <datalist id="listaEquiposAdmin"></datalist>
-                        </div>
-                    </div>
-
-                    <div class="mb-3"> 
-                        <label class="form-label fw-bold">Lugar / Cliente</label>
-                        <select class="form-select" id="admin_lugar" required>
-                            <option value="">Selecciona o escribe para buscar...</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Ubicación</label>
-                        <input type="text" class="form-control" list="listaUbicacionesAdmin" id="admin_ubicacion" placeholder="Ej: Planta baja, primaria, infantil..." autocomplete="off">
-                        <datalist id="listaUbicacionesAdmin"></datalist>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-12 col-md-6 mb-3">
-                            <label class="form-label fw-bold">Tipo</label>
-                            <select class="form-select" id="admin_tipo" required>
-                                <option value="">Selecciona...</option>
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-6 mb-3">
-                            <label class="form-label fw-bold">Estado</label>
-                            <select class="form-select" id="admin_estado" required>
-                                <option value="">Selecciona...</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Descripción Corta</label>
-                        <input type="text" class="form-control" id="admin_descripcion_corta" maxlength="100" placeholder="Ej: [Origen] [Ubicación] | [Actuaciones]" required>
-                    </div>
-
-                    <div class="mb-4 p-3 bg-info bg-opacity-10 rounded border border-info-subtle">
-                        <label class="form-label fw-bold text-info-emphasis"><i class="bi bi-ui-checks"></i> Actuaciones Requeridas</label>
-                        <div id="admin_contenedor_actuaciones" class="d-flex flex-wrap gap-2 mt-2 mb-3"></div>
-                        <label class="form-label fw-bold text-info-emphasis"><i class="bi bi-journal-text"></i> Nota / Instrucciones de Expediente</label>
-                        <textarea class="form-control border-info-subtle" id="admin_nota" rows="4" placeholder="Pega aquí los datos del expediente..."></textarea>
-                    </div>
-                    
-                    <div class="mb-3 p-3 bg-light rounded border">
-                        <label class="form-label small fw-bold text-muted"><i class="bi bi-people"></i> COMPAÑEROS EN ESTE PARTE</label>
-                        <div id="admin_contenedorCompaneros" class="d-flex flex-wrap gap-2 mt-2"></div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-12 col-md-4 mb-3">
-                            <label class="form-label fw-bold text-info-emphasis">Fecha Solicitud (Admin)</label>
-                            <input type="date" class="form-control border-info" id="admin_fecha_solicitud" required>
-                        </div>
-                        <div class="col-6 col-md-4 mb-3">
-                            <label class="form-label fw-bold">Fecha Inicio</label>
-                            <input type="date" class="form-control" id="admin_fecha_inicio" required>
-                        </div>
-                        <div class="col-6 col-md-4 mb-3">
-                            <label class="form-label fw-bold">Fecha Fin</label>
-                            <input type="date" class="form-control" id="admin_fecha_fin" required>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold" id="admin_label_nuevo_parte">Desarrollo del Parte (Opcional para el Admin)</label>
-                        <textarea class="form-control" id="admin_parte" rows="3" placeholder="Si es necesario, inicia el desarrollo del parte aquí..."></textarea>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label fw-bold"><i class="bi bi-camera text-primary"></i> Foto Previa (Antes)</label>
-                        <input type="file" class="form-control" id="admin_imagen" accept="image/*">
-                    </div>
-                    <div class="mb-4 pt-2 border-top">
-                        <label class="form-label fw-bold"><i class="bi bi-camera-fill text-success"></i> Foto Posterior (Después)</label>
-                        <input type="file" class="form-control" id="admin_imagen2" accept="image/*">
-                    </div>
-
-                    <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold shadow-sm" id="btnEnviarAdmin">
-                        <i class="bi bi-send-plus-fill"></i> Crear y Asignar Parte
                     </button>
                 </form>
             </div>
@@ -439,25 +328,6 @@
                             Generar
                         </button>
                     </div>
-                    <div class="col-12 mt-3 pt-3 border-top">
-                        <span class="small fw-bold text-muted me-3"><i class="bi bi-sliders"></i> MOSTRAR EN INFORME:</span>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="chk_inf_tipo" checked>
-                            <label class="form-check-label small" for="chk_inf_tipo">Tipo trabajo</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="chk_inf_fechas" checked>
-                            <label class="form-check-label small" for="chk_inf_fechas">Fechas</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="chk_inf_dias" checked>
-                            <label class="form-check-label small" for="chk_inf_dias">Nº de Días</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" id="chk_inf_equipo" checked>
-                            <label class="form-check-label small" for="chk_inf_equipo">Equipo</label>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -513,23 +383,6 @@
                 <input type="date" class="form-control form-control-sm" id="filtro_fecha_fin">
             </div>
         </div>
-
-        <hr class="my-4">
-        <div id="zonaFiltrosAdmin" class="bg-light p-3 rounded border opacity-75">
-            <p class="small fw-bold text-primary mb-2"><i class="bi bi-shield-lock"></i> Controles de Administración</p>
-            <div class="mb-2">
-                <label class="form-label small text-muted">FILTRAR POR USUARIO</label>
-                <select class="form-select form-select-sm" id="filtro_usuario" disabled>
-                    <option value="">Todos los usuarios</option>
-                </select>
-            </div>
-            <div>
-                <label class="form-label small text-muted">FILTRAR POR EQUIPO</label>
-                <select class="form-select form-select-sm" id="filtro_equipo" disabled>
-                    <option value="">Todos los equipos</option>
-                </select>
-            </div>
-        </div>
     </div>
     <div class="offcanvas-footer p-3 border-top bg-white">
         <button class="btn btn-primary w-100 fw-bold shadow-sm" onclick="aplicarFiltrosLaterales()">
@@ -544,6 +397,6 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="app.js"></script>
+<script src="appv30.js"></script>
 </body>
 </html>
