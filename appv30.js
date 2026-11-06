@@ -193,25 +193,19 @@ function cargarCompanerosEquipo() {
     renderizarCompaneros(lista, []);
 }
 
-/* ⚡ v35 - CARGA EN EDICIÓN (aquí vive el modo fantasma de compañeros)
-   - Admin: muestra TODOS los usuarios, marcados los de la columna N.
-   - Técnico: muestra su equipo (excluyendo al usuario de la tarea),
-     marcados los guardados en la columna N.
+/* ================================================================
+   ⚡ v36 - COMPAÑEROS: LÓGICA ÚNICA (admin y técnico)
+   1. Coge el equipo de la tarea (Col L)
+   2. Lista SOLO los usuarios de ese equipo (hoja Usuarios, Col D)
+   3. Marca los que estén guardados en la Col N
 ================================================================ */
 function cargarCompanerosEdicion(tarea) {
+    const equipoTarea = tarea.equipo || "";
     const guardados = (tarea.companeros || "").split(";").map(e => e.trim()).filter(Boolean);
 
-    if ((rolValidado || "").toLowerCase() === "admin") {
-        renderizarCompaneros(datosApp.usuarios || [], guardados);
-    } else {
-        const usuarioObj = (datosApp.usuarios || []).find(u =>
-            String(u.id).toLowerCase() === String(tarea.usuario || "").toLowerCase());
-        const equipo = usuarioObj ? usuarioObj.extra : equipoValidado;
-        const lista = (datosApp.usuarios || []).filter(u =>
-            u.extra === equipo &&
-            String(u.id).toLowerCase() !== String(tarea.usuario || "").toLowerCase());
-        renderizarCompaneros(lista, guardados);
-    }
+    const lista = (datosApp.usuarios || []).filter(u => u.extra === equipoTarea);
+
+    renderizarCompaneros(lista, guardados);
 }
 
 // Lee qué casillas están marcadas antes de enviar
@@ -860,17 +854,11 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         valIdSolicitante = solSel ? solSel.id
                          : _campoTarea(tareaExistente, "idSolicitante", "solicitante", "IdSolicitante", "idsolicitante");
 
-        // ⚡ v35: ETIQUETAS según rol
-        if ((rolValidado || "").toLowerCase() === "admin") {
-            // Admin: lee las checks visibles (que ya reflejan el estado de BD)
-            valEtiquetas = Array.from(document.querySelectorAll(".chk-etiqueta:checked"))
-                            .map(c => c.value).join(";");
-        } else {
-            // Técnico: NO toca etiquetas -> se reenvía tal cual está en BD
-            valEtiquetas = _campoTarea(tareaExistente, "etiquetas", "Etiquetas");
-        }
-
-            
+        // ⚡ v36: ETIQUETAS — si hay checks en pantalla es vista admin; si no, se conserva BD
+        const hayChecksEtiquetas = document.querySelectorAll(".chk-etiqueta").length > 0;
+        valEtiquetas = hayChecksEtiquetas
+            ? Array.from(document.querySelectorAll(".chk-etiqueta:checked")).map(c => c.value).join(";")
+            : _campoTarea(tareaExistente, "etiquetas", "Etiquetas");
 
         // Asignado Por: NO SE TOCA (siempre se conserva de BD)
         valAsignadoPor = _campoTarea(tareaExistente, "asignadoPor", "asignado_por", "AsignadoPor", "asignadopor");
@@ -1824,13 +1812,8 @@ function actualizarInfoAdministrativa(tarea) {
     const contEtiquetas = document.getElementById("info_etiquetas_container");
     contEtiquetas.innerHTML = "";
 
-    //v34.00 para mostrar las etiquetas y el admin poderlas modificar
     if (esAdmin) {
-        // Propuesta 1: mismo modelo que el técnico.
-        // Se muestra Col A (n.id), se guarda Col A, hover = Col B (n.nombre, explicación).
-        if ((datosApp.notas || []).length === 0) {
-            contEtiquetas.innerHTML = `<span class="text-muted small fst-italic">No hay etiquetas definidas en la hoja Notas</span>`;
-        }
+        // Admin: checks activables (Col A mostrada, Col A guardada, hover Col B)
         (datosApp.notas || []).forEach((n, idx) => {
             const activa = guardadas.includes(String(n.id));
             contEtiquetas.innerHTML += `
@@ -1841,6 +1824,15 @@ function actualizarInfoAdministrativa(tarea) {
                     <i class="bi bi-tag"></i> ${n.id}
                 </label>`;
         });
+    } else {
+        // Técnico: badges estáticas con lo guardado (como la versión anterior)
+        if (guardadas.length === 0) {
+            contEtiquetas.innerHTML = `<span class="text-muted small fst-italic">Sin etiquetas</span>`;
+        } else {
+            guardadas.forEach(et => {
+                contEtiquetas.innerHTML += `<span class="badge text-bg-secondary px-2 py-1"><i class="bi bi-tag"></i> ${et}</span>`;
+            });
+        }
     }
 
     // --- Habilitar/deshabilitar campos según rol ---
