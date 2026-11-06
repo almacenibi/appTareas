@@ -1972,28 +1972,29 @@ function actualizarInfoAdministrativa(tarea) {
     contEtiquetas.innerHTML = "";
 
     if (esAdmin) {
-        // Todas las etiquetas de la hoja "Notas" como checks-toggle
-        // nombre = Col B ("Notas"), etiqueta = Col C ("Explicación") para el tooltip
+        // Hoja "Notas": Col A = etiqueta (n.id), Col B = explicación (n.nombre).
+        // Admin: label muestra la explicación (Col B), value guarda la etiqueta (Col A).
         if ((datosApp.notas || []).length === 0) {
             contEtiquetas.innerHTML = `<span class="text-muted small fst-italic">No hay etiquetas definidas en la hoja Notas</span>`;
         }
         (datosApp.notas || []).forEach((n, idx) => {
-            const activa = guardadas.includes(n.nombre);
+            const activa = guardadas.includes(String(n.id));
             contEtiquetas.innerHTML += `
                 <input type="checkbox" class="btn-check chk-etiqueta" id="etq_chk_${idx}"
-                       value="${n.nombre}" ${activa ? "checked" : ""} autocomplete="off">
-                <label class="btn btn-sm rounded-pill px-2 py-1 me-1 mb-1 ${activa ? 'btn-secondary' : 'btn-outline-secondary'}"
-                       for="etq_chk_${idx}" title="${(n.etiqueta || '').replace(/"/g, '&quot;')}">
-                    <i class="bi bi-tag"></i> ${n.nombre}
+                    value="${n.id}" ${activa ? "checked" : ""} autocomplete="off">
+                <label class="btn btn-sm rounded-pill px-2 py-1 me-1 mb-1 text-truncate ${activa ? 'btn-secondary' : 'btn-outline-secondary'}"
+                    style="max-width: 260px;"
+                    for="etq_chk_${idx}" title="${(n.id || '').replace(/"/g, '&quot;')}">
+                    ${(n.nombre || '').replace(/"/g, '&quot;')}
                 </label>`;
         });
     } else {
-        // Usuario normal: solo las guardadas, estáticas
+        // Usuario: solo la etiqueta (Col A). UI mínima.
         if (guardadas.length === 0) {
             contEtiquetas.innerHTML = `<span class="text-muted small fst-italic">Sin etiquetas</span>`;
         } else {
-            guardadas.forEach(et => {
-                contEtiquetas.innerHTML += `<span class="badge text-bg-secondary px-2 py-1"><i class="bi bi-tag"></i> ${et}</span>`;
+            guardadas.forEach(v => {
+                contEtiquetas.innerHTML += `<span class="badge text-bg-secondary px-2 py-1"><i class="bi bi-tag"></i> ${v}</span>`;
             });
         }
     }
