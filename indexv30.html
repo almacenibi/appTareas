@@ -52,7 +52,7 @@
     <!-- 0. PANTALLA DE CARGA INICIAL -->
     <div id="loading" class="text-center mt-5 app-section">
         <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
-        <p class="mt-3 fw-bold text-secondary">Sincronizando datos v30.2 ...</p>
+        <p class="mt-3 fw-bold text-secondary">Sincronizando datos v30.333 ...</p>
     </div>
 
     <!-- 1. PANTALLA: LOGIN -->
@@ -135,137 +135,158 @@
             <div class="card-body p-4">
                 <h4 class="card-title fw-bold mb-4 border-bottom pb-2">Nuevo Parte de Trabajo</h4>
                 
-                <form id="formularioTareas">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Lugar / Cliente</label>
-                        <select id="lugar" required autocomplete="off">
-                            <option value="">Selecciona o escribe para buscar...</option>
-                        </select>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-12 col-md-6 mb-3">
-                            <label class="form-label fw-bold">Tipo</label>
-                            <select class="form-select" id="tipo" required>
-                                <option value="">Selecciona...</option>
+                    <form id="formularioTareas">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Lugar / Cliente</label>
+                            <select id="lugar" required autocomplete="off">
+                                <option value="">Selecciona o escribe para buscar...</option>
                             </select>
                         </div>
-                        <div class="col-12 col-md-6 mb-3">
-                            <label class="form-label fw-bold">Estado</label>
-                            <select class="form-select" id="estado" required>
-                                <option value="">Selecciona...</option>
-                            </select>
-                        </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Descripción Corta</label>
-                        <input type="text" class="form-control" id="descripcion_corta" maxlength="100" placeholder="Ej: Reparación de luminaria" required>
-                    </div>
-                    
-                    <!-- Compañeros de Equipo -->
-                    <div class="mb-3 p-3 bg-light rounded border">
-                        <label class="form-label small fw-bold text-muted"><i class="bi bi-people"></i> COMPAÑEROS DE EQUIPO EN ESTE PARTE</label>
-                        <div id="contenedorCompaneros" class="d-flex flex-wrap gap-2 mt-2">
-                            <!-- Los checkboxes se inyectarán por JS -->
+                        <div class="row">
+                            <div class="col-12 col-md-6 mb-3">
+                                <label class="form-label fw-bold">Tipo</label>
+                                <select class="form-select" id="tipo" required>
+                                    <option value="">Selecciona...</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-6 mb-3">
+                                <label class="form-label fw-bold">Estado</label>
+                                <select class="form-select" id="estado" required>
+                                    <option value="">Selecciona...</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <label class="form-label fw-bold">Fecha Inicio</label>
-                            <input type="date" class="form-control" id="fecha_inicio" required>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Descripción Corta</label>
+                            <input type="text" class="form-control" id="descripcion_corta" maxlength="100" placeholder="Ej: Reparación de luminaria" required>
                         </div>
-                        <div class="col-6 mb-3">
-                            <label class="form-label fw-bold">Fecha Fin</label>
-                            <input type="date" class="form-control" id="fecha_fin" required>
-                        </div>
-                    </div>
-
-                    <!-- Zona de edición (Solo visible al modificar)
-                    <div id="zona_edicion_parte" style="display: none;" class="mb-4 p-3 bg-light border rounded">
-                        <label class="form-label fw-bold text-secondary"><i class="bi bi-archive"></i> Parte Anterior Registrado</label>
-                        <textarea class="form-control bg-white mb-2 text-muted" id="parte_anterior" rows="3" disabled></textarea>
                         
-                        <div class="form-check form-switch mt-2">
-                            <input class="form-check-input" type="checkbox" id="borrar_parte_anterior">
-                            <label class="form-check-label text-danger fw-bold small" for="borrar_parte_anterior">
-                                <i class="bi bi-exclamation-triangle"></i> Borrar el histórico anterior al guardar (Acción irreversible)
+                        <!-- Compañeros de Equipo -->
+                        <div class="mb-3 p-3 bg-light rounded border">
+                            <label class="form-label small fw-bold text-muted"><i class="bi bi-people"></i> COMPAÑEROS DE EQUIPO EN ESTE PARTE</label>
+                            <div id="contenedorCompaneros" class="d-flex flex-wrap gap-2 mt-2">
+                                <!-- Los checkboxes se inyectarán por JS -->
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label fw-bold">Fecha Inicio</label>
+                                <input type="date" class="form-control" id="fecha_inicio" required>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label fw-bold">Fecha Fin</label>
+                                <input type="date" class="form-control" id="fecha_fin" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" id="label_nuevo_parte">Desarrollo del Parte</label>
+                            <textarea class="form-control" id="parte" rows="5" placeholder="Escribe aquí los detalles del trabajo realizado..." required></textarea>
+                        </div>
+
+                        <!-- ================================== -->
+                        <!-- FOTO 1: PREVIA A LA INTERVENCIÓN   -->
+                        <!-- ================================== -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-camera text-primary"></i> Foto Previa (Antes)
                             </label>
-                        </div>
-                    </div> -->
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold" id="label_nuevo_parte">Desarrollo del Parte</label>
-                        <textarea class="form-control" id="parte" rows="5" placeholder="Escribe aquí los detalles del trabajo realizado..." required></textarea>
-                    </div>
-
-                    <!-- ================================== -->
-                    <!-- FOTO 1: PREVIA A LA INTERVENCIÓN   -->
-                    <!-- ================================== -->
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">
-                            <i class="bi bi-camera text-primary"></i> Foto Previa (Antes)
-                        </label>
-                        
-                        <!-- Contenedor mini imagen (Solo visible al editar si ya hay foto) -->
-                        <div id="contenedor_mini_imagen" class="mb-2" style="display: none;">
-                            <div class="position-relative d-inline-block border rounded p-1">
-                                <img id="mini_imagen_preview" src="" alt="Imagen" style="max-height: 80px; max-width: 120px; object-fit: cover; opacity: 0.8;">
-                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle p-0" style="width: 24px; height: 24px;" onclick="quitarImagenPrevia()" title="Eliminar imagen actual">
-                                    <i class="bi bi-x"></i>
-                                </button>
+                            
+                            <!-- Contenedor mini imagen (Solo visible al editar si ya hay foto) -->
+                            <div id="contenedor_mini_imagen" class="mb-2" style="display: none;">
+                                <div class="position-relative d-inline-block border rounded p-1">
+                                    <img id="mini_imagen_preview" src="" alt="Imagen" style="max-height: 80px; max-width: 120px; object-fit: cover; opacity: 0.8;">
+                                    <button type="button" class="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle p-0" style="width: 24px; height: 24px;" onclick="quitarImagenPrevia()" title="Eliminar imagen actual">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </div>
+                                <input type="hidden" id="imagen_actual_url" value="">
+                                <p class="small text-muted mt-1 mb-0">Imagen previa actual. Toca la X para borrarla y subir otra.</p>
                             </div>
-                            <input type="hidden" id="imagen_actual_url" value="">
-                            <p class="small text-muted mt-1 mb-0">Imagen previa actual. Toca la X para borrarla y subir otra.</p>
+                            
+                            <input type="file" class="form-control" id="imagen" accept="image/*">
                         </div>
-                        
-                        <!-- Input normal para subir foto -->
-                        <input type="file" class="form-control" id="imagen" accept="image/*">
-                    </div>
 
-                    <!-- ================================== -->
-                    <!-- FOTO 2: POSTERIOR A LA INTERVENCIÓN-->
-                    <!-- ================================== -->
-                    <div class="mb-4 pt-2 border-top">
-                        <label class="form-label fw-bold">
-                            <i class="bi bi-camera-fill text-success"></i> Foto Posterior (Después)
-                        </label>
-                        
-                        <!-- Contenedor mini imagen (Solo visible al editar si ya hay foto) -->
-                        <div id="contenedor_mini_imagen2" class="mb-2" style="display: none;">
-                            <div class="position-relative d-inline-block border rounded p-1">
-                                <img id="mini_imagen_preview2" src="" alt="Imagen Posterior" style="max-height: 80px; max-width: 120px; object-fit: cover; opacity: 0.8;">
-                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle p-0" style="width: 24px; height: 24px;" onclick="quitarImagenPrevia2()" title="Eliminar imagen actual">
-                                    <i class="bi bi-x"></i>
-                                </button>
+                        <!-- ================================== -->
+                        <!-- FOTO 2: POSTERIOR A LA INTERVENCIÓN-->
+                        <!-- ================================== -->
+                        <div class="mb-4 pt-2 border-top">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-camera-fill text-success"></i> Foto Posterior (Después)
+                            </label>
+                            
+                            <div id="contenedor_mini_imagen2" class="mb-2" style="display: none;">
+                                <div class="position-relative d-inline-block border rounded p-1">
+                                    <img id="mini_imagen_preview2" src="" alt="Imagen Posterior" style="max-height: 80px; max-width: 120px; object-fit: cover; opacity: 0.8;">
+                                    <button type="button" class="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle p-0" style="width: 24px; height: 24px;" onclick="quitarImagenPrevia2()" title="Eliminar imagen actual">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </div>
+                                <input type="hidden" id="imagen_actual_url2" value="">
+                                <p class="small text-muted mt-1 mb-0">Imagen posterior actual. Toca la X para borrarla y subir otra.</p>
                             </div>
-                            <input type="hidden" id="imagen_actual_url2" value="">
-                            <p class="small text-muted mt-1 mb-0">Imagen posterior actual. Toca la X para borrarla y subir otra.</p>
+                            
+                            <input type="file" class="form-control" id="imagen2" accept="image/*">
+                            <div class="form-text mt-2"><i class="bi bi-cloud-arrow-up"></i> Las fotos se guardarán en Drive automáticamente.</div>
                         </div>
                         
-                        <!-- Input normal para subir foto -->
-                        <input type="file" class="form-control" id="imagen2" accept="image/*">
-                        <div class="form-text mt-2"><i class="bi bi-cloud-arrow-up"></i> Las fotos se guardarán en Drive automáticamente.</div>
-                    </div>
-                    
+                        <!--v26 Admin asigna partes-->
+                        
+                        <!-- SELECTOR EXCLUSIVO PARA ADMIN -->
+                        <div id="contenedor_admin_selector_tecnico" class="mb-3 d-none bg-warning bg-opacity-10 p-3 rounded border border-warning-subtle">
+                            <label class="form-label fw-bold text-warning-emphasis">Asignar a (Técnico) - Modo Admin</label>
+                            <input class="form-control border-warning" list="listaTecnicosAdmin" id="admin_tecnico_estandar" placeholder="Buscar técnico..." autocomplete="off">
+                            <datalist id="listaTecnicosAdmin"></datalist>
+                            <div class="form-text small">Estás registrando/editando este parte en nombre de otro usuario.</div>
+                        </div>
+                        <!--v26 Admin asigna partes-->
 
-                    <!--v26 Admin asigna partes-->
-                    
-                    <!-- SELECTOR EXCLUSIVO PARA ADMIN -->
-                    <div id="contenedor_admin_selector_tecnico" class="mb-3 d-none bg-warning bg-opacity-10 p-3 rounded border border-warning-subtle">
-                        <label class="form-label fw-bold text-warning-emphasis">Asignar a (Técnico) - Modo Admin</label>
-                        <input class="form-control border-warning" list="listaTecnicosAdmin" id="admin_tecnico_estandar" placeholder="Buscar técnico..." autocomplete="off">
-                        <datalist id="listaTecnicosAdmin"></datalist>
-                        <div class="form-text small">Estás registrando/editando este parte en nombre de otro usuario.</div>
-                    </div>
-                    <!--v26 Admin asigna partes-->
+                        <!-- ⚡ v31: INFORMACIÓN ADICIONAL (SOLO LECTURA - TODOS LOS USUARIOS) -->
+                        <!-- La lógica de edición para admin se añadira mas adelante. De momento deshabilitado para todos. -->
+                        <div id="contenedor_info_adicional" class="mb-4 p-3 bg-secondary bg-opacity-10 rounded border border-secondary-subtle d-none">
+                            <h6 class="fw-bold text-secondary-emphasis mb-3">
+                                <i class="bi bi-shield-lock"></i> Información Adicional
+                                <span class="badge text-bg-secondary ms-1">Solo lectura</span>
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="small fw-bold text-muted">Nota</label>
+                                    <input type="text" class="form-control form-control-sm" id="info_nota" readonly tabindex="-1">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="small fw-bold text-muted">Asignado Por</label>
+                                    <input type="text" class="form-control form-control-sm" id="info_asignadoPor" readonly tabindex="-1">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small fw-bold text-muted">ID Origen</label>
+                                    <input type="text" class="form-control form-control-sm" id="info_idOrigen" readonly tabindex="-1">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small fw-bold text-muted">ID Solicitante</label>
+                                    <input type="text" class="form-control form-control-sm" id="info_idSolicitante" readonly tabindex="-1">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small fw-bold text-muted">Fecha Solicitud</label>
+                                    <input type="text" class="form-control form-control-sm" id="info_fecha_solicitud" readonly tabindex="-1">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="small fw-bold text-muted">Etiquetas</label>
+                                    <input type="text" class="form-control form-control-sm" id="info_etiquetas" readonly tabindex="-1">
+                                </div>
+                            </div>
+                            <p class="small text-muted mb-0 mt-2">
+                                <i class="bi bi-info-circle"></i> Campos administrativos. No pueden modificarse desde esta vista.
+                            </p>
+                        </div>
+                        <!-- ⚡ FIN INFORMACIÓN ADICIONAL -->
 
-                    <!-- AQUÍ IREMOS PONIENDO EL BOTÓN DE ENVIAR Y EL SPINNER DE CARGA AL ENVIAR -->
-                    <button type="submit" class="btn btn-success btn-lg w-100 fw-bold shadow-sm" id="btnEnviarParte">
-                        <i class="bi bi-send-check"></i> Enviar Parte
-                    </button>
-                </form>
+                        <button type="submit" class="btn btn-success btn-lg w-100 fw-bold shadow-sm" id="btnEnviarParte">
+                            <i class="bi bi-send-check"></i> Enviar Parte
+                        </button>
+                    </form>
             </div>
         </div>
     </div>

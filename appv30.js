@@ -866,6 +866,25 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
 // --- 4. ENVÍO AL BACKEND (¡Único evento!) ---
 // --- 4. ENVÍO AL BACKEND (¡Único evento!) ---
 // --- 4. ENVÍO AL BACKEND (¡Único evento!) ---
+/* ================================================================
+   v31 - Helper de lectura robusta de campos de la tarea.
+   Prueba múltiples variantes de nombre porque el backend puede
+   devolver las propiedades con mayúsculas distintas a la hoja
+   (ej: "Actuaciones" en la hoja vs "actuaciones" en el objeto).
+   Esto era la causa de los null: leíamos una propiedad inexistente,
+   obteníamos "" y el backend machacaba la celda con vacío.
+================================================================ */
+function _campoTarea(obj, ...claves) {
+    if (!obj) return "";
+    for (const clave of claves) {
+        const valor = obj[clave];
+        if (valor !== undefined && valor !== null && String(valor) !== "undefined") {
+            return valor;
+        }
+    }
+    return "";
+}
+
 document.getElementById("formularioTareas").addEventListener("submit", function(e) {
     e.preventDefault(); 
     
@@ -881,7 +900,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     const fechaHoy = new Date().toLocaleDateString('es-ES');
     const textoParteFinal = `[${fechaHoy} | ${dias} Días] - ${document.getElementById("parte").value}`;
 
-    // --- 1. BÚSQUEDA ROBUSTA DE TAREA EXISTENTE (Se sube aquí para poder usarla en el Modo Fantasma) ---
+    // --- 1. BÚSQUEDA ROBUSTA DE TAREA EXISTENTE ---
     let tareaExistente = null;
     if (modoEdicionId) {
         tareaExistente = (datosApp.tareas || []).find(t => String(t.id) === String(modoEdicionId));
@@ -890,13 +909,12 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     // --- 2. LÓGICA MODO FANTASMA (ADMIN) Y SELECTOR ---
     let usuarioAsignado = usuarioValidado; 
     let adminQueAsigna = ""; 
-    let equipoAsignado = equipoValidado; // Por defecto el del usuario logueado
+    let equipoAsignado = equipoValidado;
 
     if (rolValidado === 'admin') {
         let elInputAdmin = document.getElementById("admin_tecnico_estandar");
         
         if (elInputAdmin && elInputAdmin.value) {
-            // Si el admin ha escrito en el input para cambiar el técnico
             let valorInput = elInputAdmin.value;
             if (valorInput.includes(" - ")) {
                 usuarioAsignado = valorInput.split(" - ")[1].trim();
@@ -904,12 +922,12 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
                 usuarioAsignado = valorInput.trim(); 
             }
             adminQueAsigna = usuarioValidado;
-        } else if (tareaExistente && tareaExistente.usuario) {
-            // MODO FANTASMA: Si está editando y no toca el input, asume la identidad del creador original (Col K)
-            usuarioAsignado = tareaExistente.usuario;
+        } else if (tareaExistente) {
+            // MODO FANTASMA: asumimos la identidad del creador original (Col K)
+            usuarioAsignado = _campoTarea(tareaExistente, "usuario", "Usuario") || usuarioValidado;
         }
 
-        // Recuperar el equipo (Col L) correspondiente al usuario emulado para el payload
+        // Recuperar el equipo (Col L) correspondiente al usuario emulado
         let usuarioObj = (datosApp.usuarios || []).find(u => u.id === usuarioAsignado);
         if (usuarioObj && usuarioObj.extra) {
             equipoAsignado = usuarioObj.extra;
@@ -920,7 +938,6 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     let seleccionados = obtenerCompanerosSeleccionados(); 
     let listaComp = seleccionados ? seleccionados.split(';').map(e => e.trim()).filter(Boolean) : [];
 
-    // Auto-incluir al usuario asignado (ya sea el real o el fantasma) en la lista de compañeros
     let emailFinalAsignado = (usuarioAsignado || "").trim().toLowerCase();
     if (emailFinalAsignado) {
         let yaIncluido = listaComp.some(e => e.toLowerCase() === emailFinalAsignado);
@@ -930,33 +947,62 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     }
     let companerosTexto = listaComp.join(';');
 
-    // --- 4. CONSERVACIÓN DE CAMPOS ADMINISTRATIVOS ---
+    /* ================================================================
+       4. CONSERVACIÓN BLINDADA DE CAMPOS ADMINISTRATIVOS (v31)
+       Columnas que el usuario NO debe tocar NUNCA:
+       F  nota            -> se conserva / default ""
+       O  Actuaciones     -> acumulativa (trazabilidad, invisible)
+       P  asignadoPor     -> se conserva / default admin o almacen
+       Q  idOrigen        -> se conserva / default "16"
+       R  idSolicitante   -> se conserva / default "167"
+       S  etiquetas       -> se conserva / default ""
+       T  fecha_solicitud -> se conserva / default ""
+    ================================================================= */
     let valAsignadoPor = "";
     let valIdOrigen = "";
     let valIdSolicitante = "";
     let valEtiquetas = "";
     let valFechaSolicitud = "";
     let valNota = "";
+    let valActuaciones = "";
 
     if (tareaExistente) {
-        // MODO EDICIÓN: Conservar SIEMPRE los valores existentes en BD 
-        valAsignadoPor = tareaExistente.asignadoPor || tareaExistente.asignado_por || "";
-        valIdOrigen = tareaExistente.idOrigen || tareaExistente.origen || "";
-        valIdSolicitante = tareaExistente.idSolicitante || tareaExistente.solicitante || "";
-        valEtiquetas = tareaExistente.etiquetas || "";
-        valFechaSolicitud = tareaExistente.fecha_solicitud || tareaExistente.fechaSolicitud || "";
-        valNota = tareaExistente.nota || "";
+        // MODO EDICIÓN: conservar SIEMPRE los valores de BD.
+        // Probamos varias variantes de nombre por si el backend
+        // devuelve las cabeceras de la hoja tal cual.
+        valNota            = _campoTarea(tareaExistente, "nota", "Nota");
+        valAsignadoPor     = _campoTarea(tareaExistente, "asignadoPor", "asignado_por", "AsignadoPor", "asignadopor");
+        valIdOrigen        = _campoTarea(tareaExistente, "idOrigen", "origen", "IdOrigen", "idorigen");
+        valIdSolicitante   = _campoTarea(tareaExistente, "idSolicitante", "solicitante", "IdSolicitante", "idsolicitante");
+        valEtiquetas       = _campoTarea(tareaExistente, "etiquetas", "Etiquetas");
+        valFechaSolicitud  = _campoTarea(tareaExistente, "fecha_solicitud", "fechaSolicitud", "Fecha_Solicitud");
+
+        // ---- ACTUACIONES (Col O): trazabilidad acumulativa ----
+        // Historial previo: lo que haya en la Col O. Si el registro es
+        // antiguo y no tiene nada, rescatamos el parte de la Col G
+        // (que contiene la [fecha | días] original) como punto de partida.
+        let historialPrevio = _campoTarea(tareaExistente, "actuaciones", "Actuaciones")
+                              || _campoTarea(tareaExistente, "parte", "Parte");
+
+        if (historialPrevio) {
+            valActuaciones = historialPrevio
+                             + "\n———[ACTUACIÓN " + fechaHoy + "]———\n"
+                             + textoParteFinal;
+        } else {
+            valActuaciones = textoParteFinal;
+        }
     } else {
-        // MODO CREACIÓN: Valores por defecto asignados e intocables
+        // MODO CREACIÓN: valores por defecto intocables
         valAsignadoPor = adminQueAsigna || "almacen.ibi@gmail.com";
         valIdOrigen = "16";
         valIdSolicitante = "167";
         valEtiquetas = "";
         valFechaSolicitud = "";
         valNota = "";
+        valActuaciones = textoParteFinal; // Primera actuación = el parte inicial
     }
 
-    // 5. PREPARACIÓN DEL PAYLOAD BÁSICO
+    // --- 5. PREPARACIÓN DEL PAYLOAD (ahora incluye TODOS los campos protegidos) ---
     const payload = {
         modo: modoEdicionId ? "editar" : "crear", 
         idRegistro: modoEdicionId,
@@ -970,10 +1016,13 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         
         usuario: usuarioAsignado,
         asignadoPor: valAsignadoPor,
-        equipo: equipoAsignado, // Modificado para inyectar el equipo emulado
+        equipo: equipoAsignado,
         companeros: companerosTexto,
         
+        // Campos protegidos: SIEMPRE viajan en el payload, incluso vacíos,
+        // para que el backend nunca tenga que rellenarlos por su cuenta.
         nota: valNota,
+        actuaciones: valActuaciones,      // ⚡ v31: antes no se enviaba -> se perdía la Col O
         idOrigen: valIdOrigen,
         idSolicitante: valIdSolicitante,
         etiquetas: valEtiquetas,
@@ -990,9 +1039,7 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         imagen_actual_url2: document.getElementById("imagen_actual_url2").value
     };
 
-    // (A partir de aquí continúa tu código normal con 'const idLugarSelec = ...')
-
-    // 2. Preparamos el nombre base para los archivos
+    // --- 6. PREPARACIÓN DEL NOMBRE BASE PARA LOS ARCHIVOS ---
     const idLugarSelec = document.getElementById("lugar").value;
     const clienteObj = datosApp.clientes.find(c => c.id === idLugarSelec);
     const nombreLugar = clienteObj ? clienteObj.nombre : "Lugar";
@@ -1038,7 +1085,23 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         procesarImagen2();
     }
 });
-/*<--v30*/
+
+/* ================================================================
+   v31 - POBLAR LA SECCIÓN "INFORMACIÓN ADICIONAL"
+   Llamar cuando el formulario se carga en MODO EDICIÓN,
+   justo después de rellenar lugar/tipo/estado/descripción.
+================================================================ */
+function actualizarInfoAdministrativa(tarea) {
+    if (!tarea) return;
+    document.getElementById("info_nota").value            = _campoTarea(tarea, "nota", "Nota");
+    document.getElementById("info_asignadoPor").value     = _campoTarea(tarea, "asignadoPor", "asignado_por", "AsignadoPor", "asignadopor");
+    document.getElementById("info_idOrigen").value        = _campoTarea(tarea, "idOrigen", "origen", "IdOrigen", "idorigen");
+    document.getElementById("info_idSolicitante").value   = _campoTarea(tarea, "idSolicitante", "solicitante", "IdSolicitante", "idsolicitante");
+    document.getElementById("info_etiquetas").value       = _campoTarea(tarea, "etiquetas", "Etiquetas");
+    document.getElementById("info_fecha_solicitud").value = _campoTarea(tarea, "fecha_solicitud", "fechaSolicitud", "Fecha_Solicitud");
+    document.getElementById("contenedor_info_adicional").classList.remove("d-none");
+}
+/*<--v31*/
 
 function enviarAlBackend(payload, btn) {
     fetch(API_URL, {
