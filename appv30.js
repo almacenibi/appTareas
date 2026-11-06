@@ -156,28 +156,76 @@ function rellenarDesplegables() {
 }
 
 
-// Genera los checks dinámicamente filtrando por el equipo del usuario logueado
-function cargarCompanerosEquipo() {
-    const contenedor = document.getElementById("contenedorCompaneros");
-    contenedor.innerHTML = "";
-    
-    // Buscamos usuarios del mismo equipo, excluyendo al usuario actual
-    const misCompaneros = datosApp.usuarios.filter(u => u.extra === equipoValidado && u.id !== usuarioValidado);
-    
-    if(misCompaneros.length === 0) {
-        contenedor.innerHTML = "<span class='text-muted small'>No hay otros compañeros en tu equipo.</span>";
+// ⚡ v32: CARGAR COMPAÑEROS POR USUARIO ESPECÍFICO (funciona para creación y modo fantasma)
+function cargarCompanerosPorUsuario(usuarioEmail, companerosGuardados = "") {
+    if (!usuarioEmail) {
+        console.warn("No se proporcionó usuario para cargar compañeros");
         return;
     }
 
-    misCompaneros.forEach(comp => {
-        const idCheck = "chk_" + comp.id.replace(/[@.]/g, "_");
-        contenedor.innerHTML += `
-            <div class="form-check form-check-inline border rounded px-2 py-1 bg-white shadow-sm mb-0">
-                <input class="form-check-input ms-0 me-2" type="checkbox" id="${idCheck}" value="${comp.id}">
-                <label class="form-check-label small" for="${idCheck}">${comp.nombre}</label>
-            </div>
+    // Buscar el usuario en el diccionario de usuarios
+    const usuarioObj = (datosApp.usuarios || []).find(u => 
+        u.id.toLowerCase() === usuarioEmail.toLowerCase() || 
+        u.nombre.toLowerCase() === usuarioEmail.toLowerCase()
+    );
+    
+    if (!usuarioObj) {
+        console.error("No se encontró el usuario:", usuarioEmail);
+        return;
+    }
+
+    const equipoDelUsuario = usuarioObj.extra || "";
+    console.log("Cargando compañeros para:", usuarioEmail, "| Equipo:", equipoDelUsuario);
+
+    // Buscar todos los usuarios del MISMO EQUIPO
+    const miembrosEquipo = (datosApp.usuarios || [])
+        .filter(u => u.extra === equipoDelUsuario && u.id !== usuarioEmail)
+        .map(u => ({ id: u.id, nombre: u.nombre }));
+
+    // Renderizar checkboxes
+    const contenedor = document.getElementById("contenedorCompaneros");
+    if (!contenedor) {
+        console.error("No se encontró el contenedor de compañeros");
+        return;
+    }
+    
+    contenedor.innerHTML = "";
+    
+    if (miembrosEquipo.length === 0) {
+        contenedor.innerHTML = "<span class='text-muted small'>No hay otros compañeros en este equipo.</span>";
+        return;
+    }
+
+    // Parsear los compañeros guardados en la tarea (columna N)
+    const companerosLista = companerosGuardados ? 
+        companerosGuardados.split(";").map(e => e.trim().toLowerCase()).filter(Boolean) : 
+        [];
+
+    // Crear checkbox para cada miembro del equipo
+    miembrosEquipo.forEach(miembro => {
+        const isChecked = companerosLista.includes(miembro.id.toLowerCase());
+        
+        const divCheckbox = document.createElement("div");
+        divCheckbox.className = "form-check form-switch";
+        divCheckbox.innerHTML = `
+            <input class="form-check-input compañero-checkbox" 
+                   type="checkbox" 
+                   id="comp_${miembro.id}" 
+                   value="${miembro.id}"
+                   ${isChecked ? "checked" : ""}>
+            <label class="form-check-label small" for="comp_${miembro.id}">
+                ${miembro.nombre}
+            </label>
         `;
+        contenedor.appendChild(divCheckbox);
     });
+
+    console.log(`Cargados ${miembrosEquipo.length} compañeros, ${companerosLista.length} marcados`);
+}
+
+// Mantener compatibilidad: esta función llama a la nueva con el usuario logueado
+function cargarCompanerosEquipo() {
+    cargarCompanerosPorUsuario(usuarioValidado, "");
 }
 
 // Lee qué casillas están marcadas antes de enviar
@@ -542,8 +590,9 @@ function renderizarTareas(listaTareas) {
         contenedor.innerHTML = htmlLista;
     }
 
+//v32 - Lumo
 function prepararEdicion(idTarea, origen = 'list-section') {
-    origenNavegacion = origen; // <--- AÑADE ESTA LÍNEA AQUÍ v17
+    origenNavegacion = origen;
     const tarea = datosApp.tareas.find(t => t.id === idTarea);
     if(!tarea) return;
 
@@ -554,7 +603,6 @@ function prepararEdicion(idTarea, origen = 'list-section') {
     document.getElementById("estado").value = tarea.estado;
     document.getElementById("descripcion_corta").value = tarea.descripcion_corta;
     
-    // Uso de la función inteligente para asegurar que no se pierda la fecha
     document.getElementById("fecha_inicio").value = convertirAFechaInput(tarea.fecha_inicio);
     document.getElementById("fecha_fin").value = convertirAFechaInput(tarea.fecha_fin);
 
@@ -564,37 +612,25 @@ function prepararEdicion(idTarea, origen = 'list-section') {
         textoLimpio = textoLimpio.replace(regex, "");
     }
     document.getElementById("parte").value = textoLimpio; 
-    //--> v14
-    // Marcar los checks de los compañeros guardados
-    document.querySelectorAll("#contenedorCompaneros input[type='checkbox']").forEach(chk => chk.checked = false);
-    if (tarea.companeros) {
-        const companerosArr = tarea.companeros.split(';');
-        document.querySelectorAll("#contenedorCompaneros input[type='checkbox']").forEach(chk => {
-            if (companerosArr.includes(chk.value)) chk.checked = true;
-        });
-    }
-    //Manipular imagen para mostrar
-    // Lógica de la mini-imagen con parche para URLs antiguas
-    // Lógica de la mini-imagen (Extraemos el ID y usamos el visor de miniaturas de Google)
+
+    // ⚡ v32: CARGAR COMPAÑEROS DEL USUARIO ORIGINAL DE LA TAREA (modo fantasma)
+    const usuarioOriginal = tarea.usuario || "";
+    const companerosGuardados = tarea.companeros || "";
+    cargarCompanerosPorUsuario(usuarioOriginal, companerosGuardados);
+
+    // Manipular imagen para mostrar (foto 1)
     if(tarea.imagen && tarea.imagen.includes("http")) {
         let urlGuardada = tarea.imagen;
         let idArchivo = "";
-
-        // 1. Extraer el ID de la imagen sin importar el formato viejo o nuevo que tengamos guardado
         if (urlGuardada.includes("id=")) {
             idArchivo = urlGuardada.split("id=")[1].split("&")[0];
         } else if (urlGuardada.includes("/file/d/")) {
             idArchivo = urlGuardada.split("/file/d/")[1].split("/")[0];
         }
-
         if (idArchivo) {
-            // 2. Generamos una URL especial para miniaturas que salta el bloqueo CORS (sz=w400 ajusta el ancho)
             let urlMiniatura = "https://drive.google.com/thumbnail?id=" + idArchivo + "&sz=w400";
-            
             document.getElementById("contenedor_mini_imagen").style.display = "block";
             document.getElementById("mini_imagen_preview").src = urlMiniatura;
-            
-            // Mantenemos la URL original en el value oculto para no perder la máxima calidad al guardar
             document.getElementById("imagen_actual_url").value = urlGuardada; 
             document.getElementById("imagen").style.display = "none"; 
         } else {
@@ -604,28 +640,19 @@ function prepararEdicion(idTarea, origen = 'list-section') {
         quitarImagenPrevia();
     }
 
-    // ========================================================
-    // Lógica de la SEGUNDA mini-imagen (Posterior / Después)
-    // ========================================================
+    // Manipular imagen 2
     if(tarea.imagen2 && tarea.imagen2.includes("http")) {
         let urlGuardada2 = tarea.imagen2;
         let idArchivo2 = "";
-
-        // 1. Extraer el ID de la imagen 2
         if (urlGuardada2.includes("id=")) {
             idArchivo2 = urlGuardada2.split("id=")[1].split("&")[0];
         } else if (urlGuardada2.includes("/file/d/")) {
             idArchivo2 = urlGuardada2.split("/file/d/")[1].split("/")[0];
         }
-
         if (idArchivo2) {
-            // 2. Generamos miniatura
             let urlMiniatura2 = "https://drive.google.com/thumbnail?id=" + idArchivo2 + "&sz=w400";
-            
             document.getElementById("contenedor_mini_imagen2").style.display = "block";
             document.getElementById("mini_imagen_preview2").src = urlMiniatura2;
-            
-            // Mantenemos URL original
             document.getElementById("imagen_actual_url2").value = urlGuardada2; 
             document.getElementById("imagen2").style.display = "none"; 
         } else {
@@ -639,7 +666,7 @@ function prepararEdicion(idTarea, origen = 'list-section') {
     document.querySelector("#form-section .card-title").innerText = "Modificar Parte";
     document.getElementById("btnEnviarParte").innerHTML = '<i class="bi bi-arrow-repeat"></i> Actualizar Parte';
     
-    // 2. JUSTO AL FINAL DE LA FUNCIÓN (antes de navegarA), añade esto:
+    // Botón volver inteligente
     const btnVolver = document.querySelector("#form-section .btn-outline-secondary");
     if (btnVolver) {
         if (origen === 'informes-section') {
@@ -651,8 +678,10 @@ function prepararEdicion(idTarea, origen = 'list-section') {
         }
     }
 
-    navegarA('form-section');
+    // ⚡ v32: MOSTRAR INFORMACIÓN ADMINISTRATIVA (si hay datos)
+    actualizarInfoAdministrativa(tarea);
 
+    navegarA('form-section');
 }
 
 // Navegación inteligente al cancelar/terminar de editar
@@ -1879,3 +1908,27 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
         btnSubmit.disabled = false;
     }
 });
+
+/* ================================================================
+   ⚡ v32 - MOSTRAR INFORMACIÓN ADMINISTRATIVA (SOLO EDICIÓN)
+================================================================ */
+function actualizarInfoAdministrativa(tarea) {
+    if (!tarea) return;
+    
+    const contenedor = document.getElementById("contenedor_info_adicional");
+    if (!contenedor) return;
+    
+    document.getElementById("info_nota").value            = _campoTarea(tarea, "nota", "Nota");
+    document.getElementById("info_asignadoPor").value     = _campoTarea(tarea, "asignadoPor", "asignado_por", "AsignadoPor", "asignadopor");
+    document.getElementById("info_idOrigen").value        = _campoTarea(tarea, "idOrigen", "origen", "IdOrigen", "idorigen");
+    document.getElementById("info_idSolicitante").value   = _campoTarea(tarea, "idSolicitante", "solicitante", "IdSolicitante", "idsolicitante");
+    document.getElementById("info_etiquetas").value       = _campoTarea(tarea, "etiquetas", "Etiquetas");
+    document.getElementById("info_fecha_solicitud").value = _campoTarea(tarea, "fecha_solicitud", "fechaSolicitud", "Fecha_Solicitud");
+    
+    // Mostrar sección SOLO en edición
+    if (modoEdicionId) {
+        contenedor.classList.remove("d-none");
+    } else {
+        contenedor.classList.add("d-none");
+    }
+}
