@@ -1971,9 +1971,10 @@ function actualizarInfoAdministrativa(tarea) {
     const contEtiquetas = document.getElementById("info_etiquetas_container");
     contEtiquetas.innerHTML = "";
 
+    //v34.00 para mostrar las etiquetas y el admin poderlas modificar
     if (esAdmin) {
-        // Hoja "Notas": Col A = etiqueta (n.id), Col B = explicación (n.nombre).
-        // Admin: label muestra la explicación (Col B), value guarda la etiqueta (Col A).
+        // Propuesta 1: mismo modelo que el técnico.
+        // Se muestra Col A (n.id), se guarda Col A, hover = Col B (n.nombre, explicación).
         if ((datosApp.notas || []).length === 0) {
             contEtiquetas.innerHTML = `<span class="text-muted small fst-italic">No hay etiquetas definidas en la hoja Notas</span>`;
         }
@@ -1982,21 +1983,11 @@ function actualizarInfoAdministrativa(tarea) {
             contEtiquetas.innerHTML += `
                 <input type="checkbox" class="btn-check chk-etiqueta" id="etq_chk_${idx}"
                     value="${n.id}" ${activa ? "checked" : ""} autocomplete="off">
-                <label class="btn btn-sm rounded-pill px-2 py-1 me-1 mb-1 text-truncate ${activa ? 'btn-secondary' : 'btn-outline-secondary'}"
-                    style="max-width: 260px;"
-                    for="etq_chk_${idx}" title="${(n.id || '').replace(/"/g, '&quot;')}">
-                    ${(n.nombre || '').replace(/"/g, '&quot;')}
+                <label class="btn btn-sm rounded-pill px-2 py-1 me-1 mb-1 ${activa ? 'btn-secondary' : 'btn-outline-secondary'}"
+                    for="etq_chk_${idx}" title="${(n.nombre || '').replace(/"/g, '&quot;')}">
+                    <i class="bi bi-tag"></i> ${n.id}
                 </label>`;
         });
-    } else {
-        // Usuario: solo la etiqueta (Col A). UI mínima.
-        if (guardadas.length === 0) {
-            contEtiquetas.innerHTML = `<span class="text-muted small fst-italic">Sin etiquetas</span>`;
-        } else {
-            guardadas.forEach(v => {
-                contEtiquetas.innerHTML += `<span class="badge text-bg-secondary px-2 py-1"><i class="bi bi-tag"></i> ${v}</span>`;
-            });
-        }
     }
 
     // --- Habilitar/deshabilitar campos según rol ---
