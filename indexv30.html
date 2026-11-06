@@ -244,36 +244,38 @@
                         </div>
                         <!--v26 Admin asigna partes-->
 
-                        <!-- ⚡ v32: INFORMACIÓN ADICIONAL (SOLO LECTURA - TODOS LOS USUARIOS) -->
+                        <!-- ⚡ v33: INFORMACIÓN ADICIONAL (SOLO LECTURA) -->
                         <div id="contenedor_info_adicional" class="mb-4 p-3 bg-secondary bg-opacity-10 rounded border border-secondary-subtle d-none">
                             <h6 class="fw-bold text-secondary-emphasis mb-3">
                                 <i class="bi bi-shield-lock"></i> Información Adicional
                                 <span class="badge text-bg-secondary ms-1">Solo lectura</span>
                             </h6>
                             <div class="row g-3">
-                                <div class="col-md-6">
+                                <div class="col-12">
                                     <label class="small fw-bold text-muted">Nota</label>
-                                    <input type="text" class="form-control form-control-sm" id="info_nota" readonly tabindex="-1">
+                                    <textarea class="form-control form-control-sm" id="info_nota" rows="2" readonly tabindex="-1"></textarea>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="small fw-bold text-muted">Asignado Por</label>
                                     <input type="text" class="form-control form-control-sm" id="info_asignadoPor" readonly tabindex="-1">
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="small fw-bold text-muted">ID Origen</label>
-                                    <input type="text" class="form-control form-control-sm" id="info_idOrigen" readonly tabindex="-1">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="small fw-bold text-muted">ID Solicitante</label>
-                                    <input type="text" class="form-control form-control-sm" id="info_idSolicitante" readonly tabindex="-1">
-                                </div>
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <label class="small fw-bold text-muted">Fecha Solicitud</label>
                                     <input type="text" class="form-control form-control-sm" id="info_fecha_solicitud" readonly tabindex="-1">
                                 </div>
                                 <div class="col-md-6">
+                                    <label class="small fw-bold text-muted">Origen</label>
+                                    <input type="text" class="form-control form-control-sm" id="info_idOrigen" list="listaInfoOrigenes" readonly tabindex="-1" placeholder="—">
+                                    <datalist id="listaInfoOrigenes"></datalist>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="small fw-bold text-muted">Solicitante</label>
+                                    <input type="text" class="form-control form-control-sm" id="info_idSolicitante" list="listaInfoSolicitantes" readonly tabindex="-1" placeholder="—">
+                                    <datalist id="listaInfoSolicitantes"></datalist>
+                                </div>
+                                <div class="col-12">
                                     <label class="small fw-bold text-muted">Etiquetas</label>
-                                    <input type="text" class="form-control form-control-sm" id="info_etiquetas" readonly tabindex="-1">
+                                    <div id="info_etiquetas_container" class="d-flex flex-wrap gap-1 mt-1"></div>
                                 </div>
                             </div>
                             <p class="small text-muted mb-0 mt-2">

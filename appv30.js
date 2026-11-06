@@ -1115,22 +1115,6 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     }
 });
 
-/* ================================================================
-   v31 - POBLAR LA SECCIÓN "INFORMACIÓN ADICIONAL"
-   Llamar cuando el formulario se carga en MODO EDICIÓN,
-   justo después de rellenar lugar/tipo/estado/descripción.
-================================================================ */
-function actualizarInfoAdministrativa(tarea) {
-    if (!tarea) return;
-    document.getElementById("info_nota").value            = _campoTarea(tarea, "nota", "Nota");
-    document.getElementById("info_asignadoPor").value     = _campoTarea(tarea, "asignadoPor", "asignado_por", "AsignadoPor", "asignadopor");
-    document.getElementById("info_idOrigen").value        = _campoTarea(tarea, "idOrigen", "origen", "IdOrigen", "idorigen");
-    document.getElementById("info_idSolicitante").value   = _campoTarea(tarea, "idSolicitante", "solicitante", "IdSolicitante", "idsolicitante");
-    document.getElementById("info_etiquetas").value       = _campoTarea(tarea, "etiquetas", "Etiquetas");
-    document.getElementById("info_fecha_solicitud").value = _campoTarea(tarea, "fecha_solicitud", "fechaSolicitud", "Fecha_Solicitud");
-    document.getElementById("contenedor_info_adicional").classList.remove("d-none");
-}
-/*<--v31*/
 
 function enviarAlBackend(payload, btn) {
     fetch(API_URL, {
