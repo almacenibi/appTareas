@@ -157,75 +157,61 @@ function rellenarDesplegables() {
 
 
 // ⚡ v32: CARGAR COMPAÑEROS POR USUARIO ESPECÍFICO (funciona para creación y modo fantasma)
-function cargarCompanerosPorUsuario(usuarioEmail, companerosGuardados = "") {
-    if (!usuarioEmail) {
-        console.warn("No se proporcionó usuario para cargar compañeros");
-        return;
-    }
-
-    // Buscar el usuario en el diccionario de usuarios
-    const usuarioObj = (datosApp.usuarios || []).find(u => 
-        u.id.toLowerCase() === usuarioEmail.toLowerCase() || 
-        u.nombre.toLowerCase() === usuarioEmail.toLowerCase()
-    );
-    
-    if (!usuarioObj) {
-        console.error("No se encontró el usuario:", usuarioEmail);
-        return;
-    }
-
-    const equipoDelUsuario = usuarioObj.extra || "";
-    console.log("Cargando compañeros para:", usuarioEmail, "| Equipo:", equipoDelUsuario);
-
-    // Buscar todos los usuarios del MISMO EQUIPO
-    const miembrosEquipo = (datosApp.usuarios || [])
-        .filter(u => u.extra === equipoDelUsuario && u.id !== usuarioEmail)
-        .map(u => ({ id: u.id, nombre: u.nombre }));
-
-    // Renderizar checkboxes
+/* ================================================================
+   ⚡ v35 - RENDER UNIFICADO DE COMPAÑEROS
+================================================================ */
+function renderizarCompaneros(listaUsuarios, idsMarcados) {
     const contenedor = document.getElementById("contenedorCompaneros");
-    if (!contenedor) {
-        console.error("No se encontró el contenedor de compañeros");
-        return;
-    }
-    
+    if (!contenedor) return;
     contenedor.innerHTML = "";
-    
-    if (miembrosEquipo.length === 0) {
-        contenedor.innerHTML = "<span class='text-muted small'>No hay otros compañeros en este equipo.</span>";
+
+    const marcados = (idsMarcados || []).map(e => e.trim().toLowerCase()).filter(Boolean);
+
+    if (listaUsuarios.length === 0) {
+        contenedor.innerHTML = "<span class='text-muted small'>No hay compañeros disponibles.</span>";
         return;
     }
 
-    // Parsear los compañeros guardados en la tarea (columna N)
-    const companerosLista = companerosGuardados ? 
-        companerosGuardados.split(";").map(e => e.trim().toLowerCase()).filter(Boolean) : 
-        [];
-
-    // Crear checkbox para cada miembro del equipo
-    miembrosEquipo.forEach(miembro => {
-        const isChecked = companerosLista.includes(miembro.id.toLowerCase());
-        
-        const divCheckbox = document.createElement("div");
-        divCheckbox.className = "form-check form-switch";
-        divCheckbox.innerHTML = `
-            <input class="form-check-input compañero-checkbox" 
-                   type="checkbox" 
-                   id="comp_${miembro.id}" 
-                   value="${miembro.id}"
-                   ${isChecked ? "checked" : ""}>
-            <label class="form-check-label small" for="comp_${miembro.id}">
-                ${miembro.nombre}
-            </label>
-        `;
-        contenedor.appendChild(divCheckbox);
+    listaUsuarios.forEach(u => {
+        const activo = marcados.includes(u.id.toLowerCase());
+        const idCheck = "chk_" + u.id.replace(/[@.]/g, "_");
+        contenedor.innerHTML += `
+            <div class="form-check form-check-inline border rounded px-2 py-1 bg-white shadow-sm mb-0">
+                <input class="form-check-input ms-0 me-2" type="checkbox" id="${idCheck}" value="${u.id}" ${activo ? "checked" : ""}>
+                <label class="form-check-label small" for="${idCheck}">${u.nombre}</label>
+            </div>`;
     });
 
-    console.log(`Cargados ${miembrosEquipo.length} compañeros, ${companerosLista.length} marcados`);
+    if (marcados.length > 0 && !listaUsuarios.some(u => marcados.includes(u.id.toLowerCase()))) {
+        console.warn("v35: Había compañeros guardados que no coinciden con ningún usuario:", marcados);
+    }
 }
 
-// Mantener compatibilidad: esta función llama a la nueva con el usuario logueado
+// LOGIN / CREACIÓN TÉCNICA: miembros de MI equipo, sin nadie marcado
 function cargarCompanerosEquipo() {
-    cargarCompanerosPorUsuario(usuarioValidado, "");
+    const lista = (datosApp.usuarios || []).filter(u => u.extra === equipoValidado && u.id !== usuarioValidado);
+    renderizarCompaneros(lista, []);
+}
+
+/* ⚡ v35 - CARGA EN EDICIÓN (aquí vive el modo fantasma de compañeros)
+   - Admin: muestra TODOS los usuarios, marcados los de la columna N.
+   - Técnico: muestra su equipo (excluyendo al usuario de la tarea),
+     marcados los guardados en la columna N.
+================================================================ */
+function cargarCompanerosEdicion(tarea) {
+    const guardados = (tarea.companeros || "").split(";").map(e => e.trim()).filter(Boolean);
+
+    if ((rolValidado || "").toLowerCase() === "admin") {
+        renderizarCompaneros(datosApp.usuarios || [], guardados);
+    } else {
+        const usuarioObj = (datosApp.usuarios || []).find(u =>
+            String(u.id).toLowerCase() === String(tarea.usuario || "").toLowerCase());
+        const equipo = usuarioObj ? usuarioObj.extra : equipoValidado;
+        const lista = (datosApp.usuarios || []).filter(u =>
+            u.extra === equipo &&
+            String(u.id).toLowerCase() !== String(tarea.usuario || "").toLowerCase());
+        renderizarCompaneros(lista, guardados);
+    }
 }
 
 // Lee qué casillas están marcadas antes de enviar
@@ -613,10 +599,8 @@ function prepararEdicion(idTarea, origen = 'list-section') {
     }
     document.getElementById("parte").value = textoLimpio; 
 
-    // ⚡ v32: CARGAR COMPAÑEROS DEL USUARIO ORIGINAL DE LA TAREA (modo fantasma)
-    const usuarioOriginal = tarea.usuario || "";
-    const companerosGuardados = tarea.companeros || "";
-    cargarCompanerosPorUsuario(usuarioOriginal, companerosGuardados);
+    // ⚡ v35: cargar checkboxes de compañeros según rol y datos de la tarea
+    cargarCompanerosEdicion(tarea);
 
     // Manipular imagen para mostrar (foto 1)
     if(tarea.imagen && tarea.imagen.includes("http")) {
@@ -750,146 +734,7 @@ function cancelarEdicionYVolver() {
     document.getElementById("btnEnviarParte").innerHTML = '<i class="bi bi-send-check"></i> Enviar Parte';
     navegarA('menu-section');
 }
-//**FORMULARIO TAREAS USUARIO Y ADMIN (admin en revisión) */
-// --- 4. ENVÍO AL BACKEND (¡Único evento!) ---
-/*
-document.getElementById("formularioTareas").addEventListener("submit", function(e) {
-    e.preventDefault(); 
-    
-    const btnEnviar = document.getElementById("btnEnviarParte");
-    btnEnviar.disabled = true;
-    btnEnviar.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
 
-    const fInicio = new Date(document.getElementById("fecha_inicio").value);
-    const fFin = new Date(document.getElementById("fecha_fin").value);
-    const diffTiempo = Math.abs(fFin - fInicio);
-    const dias = Math.ceil(diffTiempo / (1000 * 60 * 60 * 24)) + 1; 
-    
-    const fechaHoy = new Date().toLocaleDateString('es-ES');
-    const textoParteFinal = `[${fechaHoy} | ${dias} Días] - ${document.getElementById("parte").value}`;
-    
-    //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
-    // Determinar usuario final y quién asigna
-    let usuarioAsignado = usuarioValidado; // Por defecto, el idUsuario logueado
-    let adminQueAsigna = ""; 
-
-    //->v28 En el submit de formularioTareas:
-    // --- LÓGICA BLINDADA DE COMPAÑEROS (CREAR Y EDITAR) ---
-    // 1. Recoger lo seleccionado en los checkboxes
-    let seleccionados = obtenerCompanerosSeleccionados(); 
-
-    // 2. Convertir en Array limpiando espacios y elementos vacíos
-    let listaComp = seleccionados 
-        ? seleccionados.split(';').map(e => e.trim()).filter(Boolean) 
-        : [];
-
-    // 3. Normalizar el email del usuario logueado (editor/creador actual)
-    let emailEditor = (usuarioValidado || "").trim().toLowerCase();
-
-    // 4. Insertar al usuario editor si no figura ya en la lista
-    if (emailEditor) {
-        let yaIncluido = listaComp.some(e => e.toLowerCase() === emailEditor);
-        if (!yaIncluido) {
-            listaComp.unshift(emailEditor); // Lo añade al principio
-        }
-    }
-
-    // 5. Cadena final limpia para la Columna N
-    let companerosTexto = listaComp.join(';');
-    //v28 <--
-
-    
-    //--V26 ADMIN -> SELECTOR USUARIO <-- FORMULARIO ESTANDARD
-     // 1. Preparamos el paquete BÁSICO (Las fotos nuevas van vacías de momento)
-    const payload = {
-        modo: modoEdicionId ? "editar" : "crear", 
-        idRegistro: modoEdicionId,
-        lugar: document.getElementById("lugar").value,
-        tipo: document.getElementById("tipo").value,
-        estado: document.getElementById("estado").value,
-        descripcion_corta: document.getElementById("descripcion_corta").value,
-        fecha_inicio: document.getElementById("fecha_inicio").value,
-        fecha_fin: document.getElementById("fecha_fin").value,
-        parte: textoParteFinal,
-        //v26 MODIFICADOS USUARIO Y ASIGNADOPOR
-        usuario: usuarioAsignado,
-        asignadoPor: adminQueAsigna,
-        equipo: equipoValidado,
-        companeros: companerosTexto, // Usamos la variable ajustada v28
-        //companeros: obtenerCompanerosSeleccionados(),
-        
-        //v27-->
-        //¡AQUÍ ESTÁ LA CLAVE! 
-        // Añadimos las variables del Admin vacías para que el backend no falle al buscarlas
-        nota: "",
-        idOrigen: "",
-        etiquetas: "",
-        fecha_solicitud: "",
-        //<--
-
-        // Datos para Foto 1 (Previa)
-        imagenBase64: "",
-        mimeType: "",
-        nombreArchivo: "",
-        imagen_actual_url: document.getElementById("imagen_actual_url").value, 
-        
-        // Datos para Foto 2 (Posterior)
-        imagen2Base64: "",
-        mimeType2: "",
-        nombreArchivo2: "",
-        imagen_actual_url2: document.getElementById("imagen_actual_url2").value
-    };
-
-    // 2. Preparamos el nombre base para los archivos
-    const idLugarSelec = document.getElementById("lugar").value;
-    const clienteObj = datosApp.clientes.find(c => c.id === idLugarSelec);
-    const nombreLugar = clienteObj ? clienteObj.nombre : "Lugar";
-    const lugarNormalizado = nombreLugar.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "_").replace(/_+/g, "_");
-
-    const inputImagen = document.getElementById("imagen");
-    const inputImagen2 = document.getElementById("imagen2");
-
-    // --- LÓGICA EN CASCADA PARA LEER FOTOS ---
-    
-    // Paso final: Enviar al servidor
-    function enviarPeticionFinal() {
-        enviarAlBackend(payload, btnEnviar);
-    }
-
-    // Paso 2: Procesar Foto 2
-    function procesarImagen2() {
-        if (inputImagen2 && inputImagen2.files.length > 0) {
-            const archivo2 = inputImagen2.files[0];
-            const reader2 = new FileReader();
-            reader2.onload = function(evento2) {
-                const nombreOriginalLimpio2 = archivo2.name.replace(/[^a-zA-Z0-9.]/g, "_").replace(/_+/g, "_");
-                payload.imagen2Base64 = evento2.target.result.split(',')[1];
-                payload.mimeType2 = archivo2.type;
-                payload.nombreArchivo2 = lugarNormalizado + "_" + nombreOriginalLimpio2 + "_POST";
-                enviarPeticionFinal(); // Todo leído, ¡A volar!
-            };
-            reader2.readAsDataURL(archivo2);
-        } else {
-            enviarPeticionFinal(); // No hay foto 2, enviamos ya.
-        }
-    }
-
-    // Paso 1: Procesar Foto 1 (Aquí empieza el flujo)
-    if (inputImagen && inputImagen.files.length > 0) {
-        const archivo = inputImagen.files[0];
-        const reader = new FileReader();
-        reader.onload = function(evento) {
-            const nombreOriginalLimpio = archivo.name.replace(/[^a-zA-Z0-9.]/g, "_").replace(/_+/g, "_");
-            payload.imagenBase64 = evento.target.result.split(',')[1];
-            payload.mimeType = archivo.type;
-            payload.nombreArchivo = lugarNormalizado + "_" + nombreOriginalLimpio + "_PRE";
-            procesarImagen2(); // Foto 1 lista, vamos a por la 2.
-        };
-        reader.readAsDataURL(archivo);
-    } else {
-        procesarImagen2(); // No hay foto 1, saltamos a revisar la 2.
-    }
-});*/
 
 //** formulario tareas usuario y admin v30 */
 // --- 4. ENVÍO AL BACKEND (¡Único evento!) ---
@@ -1015,9 +860,17 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         valIdSolicitante = solSel ? solSel.id
                          : _campoTarea(tareaExistente, "idSolicitante", "solicitante", "IdSolicitante", "idsolicitante");
 
-        // Etiquetas: las checks activas unidas por ";"
-        valEtiquetas = Array.from(document.querySelectorAll(".chk-etiqueta:checked"))
-                        .map(c => c.value).join(";");
+        // ⚡ v35: ETIQUETAS según rol
+        if ((rolValidado || "").toLowerCase() === "admin") {
+            // Admin: lee las checks visibles (que ya reflejan el estado de BD)
+            valEtiquetas = Array.from(document.querySelectorAll(".chk-etiqueta:checked"))
+                            .map(c => c.value).join(";");
+        } else {
+            // Técnico: NO toca etiquetas -> se reenvía tal cual está en BD
+            valEtiquetas = _campoTarea(tareaExistente, "etiquetas", "Etiquetas");
+        }
+
+            
 
         // Asignado Por: NO SE TOCA (siempre se conserva de BD)
         valAsignadoPor = _campoTarea(tareaExistente, "asignadoPor", "asignado_por", "AsignadoPor", "asignadopor");
