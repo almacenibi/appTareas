@@ -1894,22 +1894,80 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
 });
 
 /* ================================================================
-   ⚡ v32 - MOSTRAR INFORMACIÓN ADMINISTRATIVA (SOLO EDICIÓN)
+   ⚡ v33.1 - INFORMACIÓN ADICIONAL (versión blindada)
+   Si falta algún elemento en el HTML, lo salta sin romper la app.
 ================================================================ */
 function actualizarInfoAdministrativa(tarea) {
     if (!tarea) return;
-    
+
     const contenedor = document.getElementById("contenedor_info_adicional");
-    if (!contenedor) return;
-    
-    document.getElementById("info_nota").value            = _campoTarea(tarea, "nota", "Nota");
-    document.getElementById("info_asignadoPor").value     = _campoTarea(tarea, "asignadoPor", "asignado_por", "AsignadoPor", "asignadopor");
-    document.getElementById("info_idOrigen").value        = _campoTarea(tarea, "idOrigen", "origen", "IdOrigen", "idorigen");
-    document.getElementById("info_idSolicitante").value   = _campoTarea(tarea, "idSolicitante", "solicitante", "IdSolicitante", "idsolicitante");
-    document.getElementById("info_etiquetas").value       = _campoTarea(tarea, "etiquetas", "Etiquetas");
-    document.getElementById("info_fecha_solicitud").value = _campoTarea(tarea, "fecha_solicitud", "fechaSolicitud", "Fecha_Solicitud");
-    
-    // Mostrar sección SOLO en edición
+    if (!contenedor) {
+        console.warn("v33: Falta el div #contenedor_info_adicional en el HTML");
+        return;
+    }
+
+    const setValor = (id, valor) => {
+        const el = document.getElementById(id);
+        if (el) el.value = valor ?? "";
+        else console.warn("v33: Falta el elemento #" + id);
+    };
+
+    // Nota (Col F) - textarea
+    setValor("info_nota", _campoTarea(tarea, "nota", "Nota"));
+
+    // Asignado Por (Col P)
+    setValor("info_asignadoPor", _campoTarea(tarea, "asignadoPor", "asignado_por", "AsignadoPor", "asignadopor"));
+
+    // Fecha Solicitud (Col T)
+    setValor("info_fecha_solicitud", _campoTarea(tarea, "fecha_solicitud", "fechaSolicitud", "Fecha_Solicitud"));
+
+    // Origen (Col Q) resuelto con nombre desde hoja "Origen" (id | Origen | Etiqueta)
+    const valIdOrigen = _campoTarea(tarea, "idOrigen", "origen", "IdOrigen", "idorigen");
+    const origenObj = (datosApp.origenes || []).find(o => String(o.id) === String(valIdOrigen));
+    setValor("info_idOrigen", origenObj
+        ? (origenObj.etiqueta ? `${origenObj.nombre} (${origenObj.etiqueta})` : origenObj.nombre)
+        : valIdOrigen);
+
+    // Solicitante (Col R) resuelto con nombre desde hoja "Solicitante" (id | Solicitante)
+    const valIdSolicitante = _campoTarea(tarea, "idSolicitante", "solicitante", "IdSolicitante", "idsolicitante");
+    const solObj = (datosApp.solicitantes || []).find(s => String(s.id) === String(valIdSolicitante));
+    setValor("info_idSolicitante", solObj ? solObj.nombre : valIdSolicitante);
+
+    // Etiquetas (Col S) como badges
+    const contEtiquetas = document.getElementById("info_etiquetas_container");
+    if (contEtiquetas) {
+        const valEtiquetas = _campoTarea(tarea, "etiquetas", "Etiquetas");
+        contEtiquetas.innerHTML = "";
+        if (valEtiquetas) {
+            valEtiquetas.split(";").map(e => e.trim()).filter(Boolean).forEach(et => {
+                contEtiquetas.innerHTML += `<span class="badge text-bg-secondary px-2 py-1"><i class="bi bi-tag"></i> ${et}</span>`;
+            });
+        } else {
+            contEtiquetas.innerHTML = `<span class="text-muted small fst-italic">Sin etiquetas</span>`;
+        }
+    } else {
+        console.warn("v33: Falta el elemento #info_etiquetas_container");
+    }
+
+    // Datalists (se usarán en la fase de edición-admin)
+    const dlOrigenes = document.getElementById("listaInfoOrigenes");
+    if (dlOrigenes && dlOrigenes.options.length === 0 && (datosApp.origenes || []).length) {
+        datosApp.origenes.forEach(o => {
+            let opt = document.createElement("option");
+            opt.value = o.nombre;
+            dlOrigenes.appendChild(opt);
+        });
+    }
+    const dlSolicitantes = document.getElementById("listaInfoSolicitantes");
+    if (dlSolicitantes && dlSolicitantes.options.length === 0 && (datosApp.solicitantes || []).length) {
+        datosApp.solicitantes.forEach(s => {
+            let opt = document.createElement("option");
+            opt.value = s.nombre;
+            dlSolicitantes.appendChild(opt);
+        });
+    }
+
+    // Visibilidad: solo en edición
     if (modoEdicionId) {
         contenedor.classList.remove("d-none");
     } else {
