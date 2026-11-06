@@ -996,23 +996,35 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
     let valActuaciones = "";
 
     if (tareaExistente) {
-        // MODO EDICIÓN: conservar SIEMPRE los valores de BD.
-        // Probamos varias variantes de nombre por si el backend
-        // devuelve las cabeceras de la hoja tal cual.
-        valNota            = _campoTarea(tareaExistente, "nota", "Nota");
-        valAsignadoPor     = _campoTarea(tareaExistente, "asignadoPor", "asignado_por", "AsignadoPor", "asignadopor");
-        valIdOrigen        = _campoTarea(tareaExistente, "idOrigen", "origen", "IdOrigen", "idorigen");
-        valIdSolicitante   = _campoTarea(tareaExistente, "idSolicitante", "solicitante", "IdSolicitante", "idsolicitante");
-        valEtiquetas       = _campoTarea(tareaExistente, "etiquetas", "Etiquetas");
-        valFechaSolicitud  = _campoTarea(tareaExistente, "fecha_solicitud", "fechaSolicitud", "Fecha_Solicitud");
+        // MODO EDICIÓN: los valores ahora se leen de la sección Info Adicional
+        // (para el usuario normal estarán deshabilitados pero con el valor cargado,
+        //  así que se conservan igualmente; para admin permiten modificarlos).
 
-        // ---- ACTUACIONES (Col O): trazabilidad acumulativa ----
-        // Historial previo: lo que haya en la Col O. Si el registro es
-        // antiguo y no tiene nada, rescatamos el parte de la Col G
-        // (que contiene la [fecha | días] original) como punto de partida.
+        valNota           = document.getElementById("info_nota").value;
+        valFechaSolicitud = document.getElementById("info_fecha_solicitud").value; // AAAA-MM-DD del input date
+
+        // Origen: resolver el ID desde el NOMBRE seleccionado (Col B hoja "Origen" -> Col A)
+        const nombreOrigen = (document.getElementById("info_idOrigen").value || "").trim();
+        const origenSel = (datosApp.origenes || []).find(o => o.nombre === nombreOrigen);
+        valIdOrigen = origenSel ? origenSel.id
+                    : _campoTarea(tareaExistente, "idOrigen", "origen", "IdOrigen", "idorigen"); // fallback: valor de BD
+
+        // Solicitante: idem con hoja "Solicitante"
+        const nombreSolicitante = (document.getElementById("info_idSolicitante").value || "").trim();
+        const solSel = (datosApp.solicitantes || []).find(s => s.nombre === nombreSolicitante);
+        valIdSolicitante = solSel ? solSel.id
+                         : _campoTarea(tareaExistente, "idSolicitante", "solicitante", "IdSolicitante", "idsolicitante");
+
+        // Etiquetas: las checks activas unidas por ";"
+        valEtiquetas = Array.from(document.querySelectorAll(".chk-etiqueta:checked"))
+                        .map(c => c.value).join(";");
+
+        // Asignado Por: NO SE TOCA (siempre se conserva de BD)
+        valAsignadoPor = _campoTarea(tareaExistente, "asignadoPor", "asignado_por", "AsignadoPor", "asignadopor");
+
+        // Actuaciones: igual que antes (acumulativo)
         let historialPrevio = _campoTarea(tareaExistente, "actuaciones", "Actuaciones")
                               || _campoTarea(tareaExistente, "parte", "Parte");
-
         if (historialPrevio) {
             valActuaciones = historialPrevio
                              + "\n———[ACTUACIÓN " + fechaHoy + "]———\n"
@@ -1894,83 +1906,118 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
 });
 
 /* ================================================================
-   ⚡ v33.1 - INFORMACIÓN ADICIONAL (versión blindada)
-   Si falta algún elemento en el HTML, lo salta sin romper la app.
+   ⚡ v34 - INFORMACIÓN ADICIONAL INTERACTIVA
+   - Usuario normal: todo readonly, etiquetas estáticas
+   - Admin: nota/fecha/origen/solicitante editables, etiquetas
+     como checks (btn-check de Bootstrap) con tooltip "alt"
+   - Origen muestra SOLO el nombre (Col B de hoja "Origen")
 ================================================================ */
 function actualizarInfoAdministrativa(tarea) {
     if (!tarea) return;
 
     const contenedor = document.getElementById("contenedor_info_adicional");
-    if (!contenedor) {
-        console.warn("v33: Falta el div #contenedor_info_adicional en el HTML");
-        return;
-    }
+    if (!contenedor) return;
+
+    const esAdmin = (rolValidado || "").toLowerCase() === "admin";
 
     const setValor = (id, valor) => {
         const el = document.getElementById(id);
         if (el) el.value = valor ?? "";
-        else console.warn("v33: Falta el elemento #" + id);
+        else console.warn("v34: Falta el elemento #" + id);
     };
 
-    // Nota (Col F) - textarea
+    // --- Nota (Col F) ---
     setValor("info_nota", _campoTarea(tarea, "nota", "Nota"));
 
-    // Asignado Por (Col P)
+    // --- Asignado Por (Col P): SIEMPRE readonly, no se toca ---
     setValor("info_asignadoPor", _campoTarea(tarea, "asignadoPor", "asignado_por", "AsignadoPor", "asignadopor"));
 
-    // Fecha Solicitud (Col T)
-    setValor("info_fecha_solicitud", _campoTarea(tarea, "fecha_solicitud", "fechaSolicitud", "Fecha_Solicitud"));
+    // --- Fecha Solicitud (Col T): normalizada a AAAA-MM-DD para el input date ---
+    setValor("info_fecha_solicitud", convertirAFechaInput(_campoTarea(tarea, "fecha_solicitud", "fechaSolicitud", "Fecha_Solicitud")));
 
-    // Origen (Col Q) resuelto con nombre desde hoja "Origen" (id | Origen | Etiqueta)
+    // --- Origen (Col Q): resolver nombre (Col B de hoja "Origen"), SIN etiqueta ---
     const valIdOrigen = _campoTarea(tarea, "idOrigen", "origen", "IdOrigen", "idorigen");
     const origenObj = (datosApp.origenes || []).find(o => String(o.id) === String(valIdOrigen));
-    setValor("info_idOrigen", origenObj
-        ? (origenObj.etiqueta ? `${origenObj.nombre} (${origenObj.etiqueta})` : origenObj.nombre)
-        : valIdOrigen);
+    setValor("info_idOrigen", origenObj ? origenObj.nombre : valIdOrigen);
 
-    // Solicitante (Col R) resuelto con nombre desde hoja "Solicitante" (id | Solicitante)
+    // --- Solicitante (Col R): resolver nombre (Col B de hoja "Solicitante") ---
     const valIdSolicitante = _campoTarea(tarea, "idSolicitante", "solicitante", "IdSolicitante", "idsolicitante");
     const solObj = (datosApp.solicitantes || []).find(s => String(s.id) === String(valIdSolicitante));
     setValor("info_idSolicitante", solObj ? solObj.nombre : valIdSolicitante);
 
-    // Etiquetas (Col S) como badges
-    const contEtiquetas = document.getElementById("info_etiquetas_container");
-    if (contEtiquetas) {
-        const valEtiquetas = _campoTarea(tarea, "etiquetas", "Etiquetas");
-        contEtiquetas.innerHTML = "";
-        if (valEtiquetas) {
-            valEtiquetas.split(";").map(e => e.trim()).filter(Boolean).forEach(et => {
-                contEtiquetas.innerHTML += `<span class="badge text-bg-secondary px-2 py-1"><i class="bi bi-tag"></i> ${et}</span>`;
-            });
-        } else {
-            contEtiquetas.innerHTML = `<span class="text-muted small fst-italic">Sin etiquetas</span>`;
-        }
-    } else {
-        console.warn("v33: Falta el elemento #info_etiquetas_container");
-    }
-
-    // Datalists (se usarán en la fase de edición-admin)
+    // --- Datalists (predicción para admin) ---
     const dlOrigenes = document.getElementById("listaInfoOrigenes");
-    if (dlOrigenes && dlOrigenes.options.length === 0 && (datosApp.origenes || []).length) {
-        datosApp.origenes.forEach(o => {
+    if (dlOrigenes) {
+        dlOrigenes.innerHTML = "";
+        (datosApp.origenes || []).forEach(o => {
             let opt = document.createElement("option");
             opt.value = o.nombre;
             dlOrigenes.appendChild(opt);
         });
     }
     const dlSolicitantes = document.getElementById("listaInfoSolicitantes");
-    if (dlSolicitantes && dlSolicitantes.options.length === 0 && (datosApp.solicitantes || []).length) {
-        datosApp.solicitantes.forEach(s => {
+    if (dlSolicitantes) {
+        dlSolicitantes.innerHTML = "";
+        (datosApp.solicitantes || []).forEach(s => {
             let opt = document.createElement("option");
             opt.value = s.nombre;
             dlSolicitantes.appendChild(opt);
         });
     }
 
-    // Visibilidad: solo en edición
-    if (modoEdicionId) {
-        contenedor.classList.remove("d-none");
+    // --- Etiquetas (Col S) ---
+    const valEtiquetas = _campoTarea(tarea, "etiquetas", "Etiquetas");
+    const guardadas = valEtiquetas.split(";").map(e => e.trim()).filter(Boolean);
+    const contEtiquetas = document.getElementById("info_etiquetas_container");
+    contEtiquetas.innerHTML = "";
+
+    if (esAdmin) {
+        // Todas las etiquetas de la hoja "Notas" como checks-toggle
+        // nombre = Col B ("Notas"), etiqueta = Col C ("Explicación") para el tooltip
+        if ((datosApp.notas || []).length === 0) {
+            contEtiquetas.innerHTML = `<span class="text-muted small fst-italic">No hay etiquetas definidas en la hoja Notas</span>`;
+        }
+        (datosApp.notas || []).forEach((n, idx) => {
+            const activa = guardadas.includes(n.nombre);
+            contEtiquetas.innerHTML += `
+                <input type="checkbox" class="btn-check chk-etiqueta" id="etq_chk_${idx}"
+                       value="${n.nombre}" ${activa ? "checked" : ""} autocomplete="off">
+                <label class="btn btn-sm rounded-pill px-2 py-1 me-1 mb-1 ${activa ? 'btn-secondary' : 'btn-outline-secondary'}"
+                       for="etq_chk_${idx}" title="${(n.etiqueta || '').replace(/"/g, '&quot;')}">
+                    <i class="bi bi-tag"></i> ${n.nombre}
+                </label>`;
+        });
     } else {
-        contenedor.classList.add("d-none");
+        // Usuario normal: solo las guardadas, estáticas
+        if (guardadas.length === 0) {
+            contEtiquetas.innerHTML = `<span class="text-muted small fst-italic">Sin etiquetas</span>`;
+        } else {
+            guardadas.forEach(et => {
+                contEtiquetas.innerHTML += `<span class="badge text-bg-secondary px-2 py-1"><i class="bi bi-tag"></i> ${et}</span>`;
+            });
+        }
     }
+
+    // --- Habilitar/deshabilitar campos según rol ---
+    ["info_nota", "info_fecha_solicitud", "info_idOrigen", "info_idSolicitante"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.readOnly = !esAdmin && el.tagName !== "TEXTAREA";
+            el.disabled = false; // nunca disabled: el valor debe viajar en el payload
+            if (!esAdmin) el.tabIndex = -1;
+        }
+    });
+    const infoNota = document.getElementById("info_nota");
+    if (infoNota) infoNota.readOnly = !esAdmin;
+
+    // --- Rótulos según rol ---
+    const badge = document.getElementById("badge_modo_info");
+    const ayuda = document.getElementById("texto_ayuda_info");
+    if (badge) badge.innerText = esAdmin ? "Modo Admin" : "Solo lectura";
+    if (ayuda) ayuda.innerText = esAdmin
+        ? "Modo admin: puedes modificar estos campos. Se guardarán al enviar el parte."
+        : "Campos administrativos. No pueden modificarse desde esta vista.";
+
+    // --- Visibilidad: siempre visible en edición ---
+    contenedor.classList.remove("d-none");
 }
