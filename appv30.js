@@ -863,16 +863,23 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         // Asignado Por: NO SE TOCA (siempre se conserva de BD)
         valAsignadoPor = _campoTarea(tareaExistente, "asignadoPor", "asignado_por", "AsignadoPor", "asignadopor");
 
-        // Actuaciones: igual que antes (acumulativo)
+        // v36---- ACTUACIONES (Col O) — Variante B ----
         let historialPrevio = _campoTarea(tareaExistente, "actuaciones", "Actuaciones")
                               || _campoTarea(tareaExistente, "parte", "Parte");
-        if (historialPrevio) {
-            valActuaciones = historialPrevio
-                             + "\n———[ACTUACIÓN " + fechaHoy + "]———\n"
-                             + textoParteFinal;
-        } else {
-            valActuaciones = textoParteFinal;
-        }
+
+        // Cabecera de la nueva actuación: [ALTA] la primera vez, [MOD] en ediciones
+        const esAlta = !historialPrevio; // sin historial => es la actuación inicial
+        const tipoActuacion = esAlta ? "[ALTA]" : "[MOD]";
+
+        // Referencia corta: 8 caracteres únicos
+        const ref = Math.random().toString(36).substring(2, 10);
+
+        const cabeceraNueva = `${tipoActuacion} REF:${ref} | ${fechaHoy} | ${usuarioAsignado}`
+                            + `\n  > ${textoParteFinal}`;
+
+        valActuaciones = esAlta
+            ? cabeceraNueva
+            : historialPrevio + "\n══════════════════════════════════════\n" + cabeceraNueva;
     } else {
         // MODO CREACIÓN: valores por defecto intocables
         valAsignadoPor = adminQueAsigna || "almacen.ibi@gmail.com";
@@ -881,7 +888,8 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         valEtiquetas = "";
         valFechaSolicitud = "";
         valNota = "";
-        valActuaciones = textoParteFinal; // Primera actuación = el parte inicial
+        valActuaciones = `[ALTA] REF:${Math.random().toString(36).substring(2, 10)} | ${fechaHoy} | ${usuarioAsignado}`
+                + `\n  > ${textoParteFinal}`; //<-- v36
     }
 
     // --- 5. PREPARACIÓN DEL PAYLOAD (ahora incluye TODOS los campos protegidos) ---
