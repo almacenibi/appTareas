@@ -863,23 +863,43 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
         // Asignado Por: NO SE TOCA (siempre se conserva de BD)
         valAsignadoPor = _campoTarea(tareaExistente, "asignadoPor", "asignado_por", "AsignadoPor", "asignadopor");
 
-        // v36---- ACTUACIONES (Col O) — Variante B ----
-        let historialPrevio = _campoTarea(tareaExistente, "actuaciones", "Actuaciones")
-                              || _campoTarea(tareaExistente, "parte", "Parte");
+        // ---- ACTUACIONES (Col O) — v37 con diff compacto ----
+        // Parte anterior limpio (sin el prefijo [fecha | días])
+        let parteAnteriorLimpio = _campoTarea(tareaExistente, "parte", "Parte");
+        const regexPrefijo = /^\[.*?\] - /;
+        if (regexPrefijo.test(parteAnteriorLimpio)) {
+            parteAnteriorLimpio = parteAnteriorLimpio.replace(regexPrefijo, "");
+        }
 
-        // Cabecera de la nueva actuación: [ALTA] la primera vez, [MOD] en ediciones
-        const esAlta = !historialPrevio; // sin historial => es la actuación inicial
-        const tipoActuacion = esAlta ? "[ALTA]" : "[MOD]";
+        // Texto nuevo tal cual lo escribió el usuario (sin prefijo)
+        const parteNuevoTexto = document.getElementById("parte").value;
 
-        // Referencia corta: 8 caracteres únicos
+        const diff = _diffLineas(parteAnteriorLimpio, parteNuevoTexto);
+        const huboCambiosTexto = (diff.aniadidas.length > 0 || diff.eliminadas.length > 0);
+
+        // Contexto extra: detectamos cambios de fechas aunque el texto no cambie
+        const fechasAntes = `${convertirAFechaInput(tareaExistente.fecha_inicio)}→${convertirAFechaInput(tareaExistente.fecha_fin)}`;
+        const fechasAhora = `${document.getElementById("fecha_inicio").value}→${document.getElementById("fecha_fin").value}`;
+        const cambioFechas = fechasAntes !== fechasAhora;
+
         const ref = Math.random().toString(36).substring(2, 10);
+        const cabeceraNueva = `[MOD] REF:${ref} | ${fechaHoy} | ${usuarioAsignado}`;
 
-        const cabeceraNueva = `${tipoActuacion} REF:${ref} | ${fechaHoy} | ${usuarioAsignado}`
-                            + `\n  > ${textoParteFinal}`;
+        let cuerpoDiff = "";
+        if (huboCambiosTexto) {
+            diff.eliminadas.forEach(l => cuerpoDiff += `  - ${l}\n`);
+            diff.aniadidas.forEach(l => cuerpoDiff += `  + ${l}\n`);
+            if (cambioFechas) cuerpoDiff += `  ~ Fechas: ${fechasAntes} → ${fechasAhora}\n`;
+        } else if (cambioFechas) {
+            cuerpoDiff = `  ~ Fechas: ${fechasAntes} → ${fechasAhora}\n`;
+        } else {
+            cuerpoDiff = `  (guardado sin cambios de texto)\n`;
+        }
 
-        valActuaciones = esAlta
-            ? cabeceraNueva
-            : historialPrevio + "\n══════════════════════════════════════\n" + cabeceraNueva;
+        const historialPrevio = _campoTarea(tareaExistente, "actuaciones", "Actuaciones");
+        valActuaciones = historialPrevio
+            ? historialPrevio + "\n══════════════════════════════════════\n" + cabeceraNueva + "\n" + cuerpoDiff.trimEnd()
+            : cabeceraNueva + "\n" + cuerpoDiff.trimEnd();
     } else {
         // MODO CREACIÓN: valores por defecto intocables
         valAsignadoPor = adminQueAsigna || "almacen.ibi@gmail.com";
@@ -1865,4 +1885,45 @@ function actualizarInfoAdministrativa(tarea) {
 
     // --- Visibilidad: siempre visible en edición ---
     contenedor.classList.remove("d-none");
+}
+
+/* ================================================================
+   ⚡ v37 - DIFF DE LÍNEAS ENTRE PARTES (para trazabilidad compacta)
+   Compara el parte anterior con el nuevo línea a línea y devuelve
+   las líneas añadidas (+) y eliminadas (-).
+   La comparación ignora mayúsculas, espacios sobrantes y
+   acentuación, para no marcar cambios triviales.
+================================================================ */
+function _normalizarLinea(linea) {
+    return (linea || "")
+        .toString()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // quita acentos
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, " "); // colapsa espacios múltiples
+}
+
+function _diffLineas(textoAnterior, textoNuevo) {
+    const lineasAntes = (textoAnterior || "").split("\n").map(l => l.trim()).filter(Boolean);
+    const lineasDespues = (textoNuevo || "").split("\n").map(l => l.trim()).filter(Boolean);
+
+    // Trabajamos con versiones normalizadas para comparar,
+    // pero mostramos las líneas ORIGINALES (con su formato real)
+    const normAntes = lineasAntes.map(_normalizarLinea);
+    const normDespues = lineasDespues.map(_normalizarLinea);
+
+    const eliminadas = [];
+    const aniadidas = [];
+
+    // ¿Qué había antes que ya no está? -> líneas "-"
+    normAntes.forEach((norm, i) => {
+        if (!normDespues.includes(norm)) eliminadas.push(lineasAntes[i]);
+    });
+
+    // ¿Qué hay ahora que no estaba? -> líneas "+"
+    normDespues.forEach((norm, i) => {
+        if (!normAntes.includes(norm)) aniadidas.push(lineasDespues[i]);
+    });
+
+    return { eliminadas, aniadidas };
 }
