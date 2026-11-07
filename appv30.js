@@ -1883,6 +1883,15 @@ function actualizarInfoAdministrativa(tarea) {
         ? "Modo admin: puedes modificar estos campos. Se guardarán al enviar el parte."
         : "Campos administrativos. No pueden modificarse desde esta vista.";
 
+    // ⚡ v38: PRIVACIDAD — el técnico solo ve Nota | Fecha solicitud | Etiquetas.
+    // Asignado Por, Origen y Solicitante quedan ocultos para no-admin.
+    // IMPORTANTE: se ocultan con d-none (no disabled), así el input sigue
+    // cargando el valor de BD y el submit lo reenvía intacto -> nunca se pierde.
+    ["fila_info_asignadoPor", "fila_info_idOrigen", "fila_info_idSolicitante"].forEach(idFila => {
+        const el = document.getElementById(idFila);
+        if (el) el.classList.toggle("d-none", !esAdmin);
+    });
+
     // --- Visibilidad: siempre visible en edición ---
     contenedor.classList.remove("d-none");
 }
