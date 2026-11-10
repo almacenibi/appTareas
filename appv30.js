@@ -1444,7 +1444,6 @@ function abrirFormularioAdmin() {
     navegarA('admin-form-section');
 }
 
- */
 //** - FORMULARIO ADMIN V29 */
 //--> v29 - Formulario Admin Submit (Búsqueda robusta de IDs para Origen y Solicitante)
 /*document.getElementById("formularioAdmin").addEventListener("submit", async function(e) {
