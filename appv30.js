@@ -114,6 +114,21 @@ function rellenarDesplegables() {
     }
     new TomSelect("#lugar", { create: false, sortField: { field: "text", direction: "asc" } });
 
+    // ⚡ v39: TomSelect para el buscador del formulario ADMIN
+    if (document.getElementById("admin_lugar")) {
+        // Cargar opciones (idéntico al estándar)
+        const selAdminLugar = document.getElementById("admin_lugar");
+        selAdminLugar.innerHTML = '<option value="">Selecciona o escribe...</option>';
+        (datosApp.clientes || []).forEach(item => {
+            let opcion = document.createElement("option");
+            opcion.value = item.id;
+            opcion.text = item.nombre;
+            selAdminLugar.appendChild(opcion);
+        });
+        if (selAdminLugar.tomselect) selAdminLugar.tomselect.destroy();
+        new TomSelect("#admin_lugar", { create: false, sortField: { field: "text", direction: "asc" } });
+    }
+    
     // Buscador del panel de filtros
     if (document.getElementById("filtro_lugar").tomselect) {
         document.getElementById("filtro_lugar").tomselect.destroy();
@@ -1429,207 +1444,10 @@ function abrirFormularioAdmin() {
     navegarA('admin-form-section');
 }
 
-//<--v14
-
-/*Lógica antigua para enviar al backend el formulario admin
-//-->V27 - Pruebas previas al envío al backend del formulario de admin -
-document.getElementById("formularioAdmin").addEventListener("submit", function(e) {
-    e.preventDefault();
-
-    let nodosCompaneros = Array.from(document.querySelectorAll(".check-companero:checked"));
-    if (nodosCompaneros.length === 0) {
-        alert("Debes asignar al menos un compañero de equipo al parte.");
-        return; 
-    }
-
-    // Recolectar nombres para la columna N (Compañeros)
-    let stringCompaneros = nodosCompaneros.map(cb => cb.value).join(";");
-    
-    // Extraer el correo del primer compañero seleccionado para la columna K (Usuario)
-    let usuarioAsignado = nodosCompaneros[0].getAttribute("data-id");
-
-    let nombreUbicacion = document.getElementById("admin_ubicacion").value.trim();
-    let idUbicacionFinal = nombreUbicacion; 
-    if (datosApp.ubicaciones) {
-        let ubicacionObj = datosApp.ubicaciones.find(u => u.nombre === nombreUbicacion);
-        if (ubicacionObj) idUbicacionFinal = ubicacionObj.id; 
-    }
-
-    let etiquetasArray = Array.from(document.querySelectorAll(".check-actuacion:checked")).map(cb => cb.value);
-    let stringEtiquetas = etiquetasArray.join(";");
-
-    const payload = {
-        modo: "crear",
-        descripcion_corta: document.getElementById("admin_descripcion_corta").value,
-        fecha_solicitud: document.getElementById("admin_fecha_solicitud").value,
-        idOrigen: idUbicacionFinal, 
-        etiquetas: stringEtiquetas, 
-        companeros: stringCompaneros,
-        usuario: usuarioAsignado,
-        asignadoPor: usuarioValidado 
-    };
-
-    console.warn("📦 SIMULACIÓN LISTA:", payload);
-    alert("Revisa la consola. Si el 'usuario' muestra el email y 'companeros' los nombres, ¡estamos listos!");
-});
-//<-- v27*/
-
-//**PAYLOADDDDDDDD**// -> Retiro para pasar a v29 y tener copia
-/*
-//--> v27.3 lógica para enviar al backend del admin
-document.getElementById("formularioAdmin").addEventListener("submit", async function(e) {
-    e.preventDefault();
-
-    /* Versión antigua de captura del id
-    let nodosCompaneros = Array.from(document.querySelectorAll(".check-companero:checked"));
-    if (nodosCompaneros.length === 0) {
-        alert("Debes asignar al menos un compañero de equipo al parte.");
-        return; 
-    }
-
-    let stringCompaneros = nodosCompaneros.map(cb => cb.value).join(";");
-    let usuarioAsignado = nodosCompaneros[0].getAttribute("data-id");
-    */
-    /**
-    // En el submit de formularioAdmin:
-    let nodosCompaneros = Array.from(document.querySelectorAll(".check-companero:checked"));
-    if (nodosCompaneros.length === 0) {
-        alert("Debes asignar al menos un compañero de equipo al parte.");
-        return; 
-    }
-
-    // Extrae directamente los emails (user.id)
-    let stringCompaneros = nodosCompaneros.map(cb => cb.value).join(";");
-    let usuarioAsignado = nodosCompaneros[0].value; // El primer email como técnico principal
-
-
-    let nombreUbicacion = document.getElementById("admin_ubicacion").value.trim();
-    let idUbicacionFinal = nombreUbicacion; 
-    if (datosApp.ubicaciones) {
-        let ubicacionObj = datosApp.ubicaciones.find(u => u.nombre === nombreUbicacion);
-        if (ubicacionObj) idUbicacionFinal = ubicacionObj.id; 
-    }
-
-    let etiquetasArray = Array.from(document.querySelectorAll(".check-actuacion:checked")).map(cb => cb.value);
-    let stringEtiquetas = etiquetasArray.join(";");
-
-    // Función auxiliar para leer imágenes a Base64 (heredada de tu lógica normal)
-    const leerImagenBase64 = (inputId) => {
-        return new Promise((resolve) => {
-            let input = document.getElementById(inputId);
-            if (input && input.files.length > 0) {
-                let reader = new FileReader();
-                reader.onload = () => resolve({
-                    base64: reader.result.split(',')[1],
-                    mime: input.files[0].type,
-                    nombre: input.files[0].name
-                });
-                reader.readAsDataURL(input.files[0]);
-            } else {
-                resolve(null);
-            }
-        });
-    };
-
-    // Leemos ambas fotos
-    let img1 = await leerImagenBase64("admin_imagen");
-    let img2 = await leerImagenBase64("admin_imagen2");
-
-    
-    //-->V27.4.2 -> Añadir datos para recoger el solicitante [optimizar]
-    // 1. Extraer ID del Solicitante
-    let nombreSolicitante = document.getElementById("admin_idSolicitante") ? document.getElementById("admin_idSolicitante").value.trim() : "";
-    let idSolicitanteFinal = nombreSolicitante; // Dejamos lo escrito por si es un nuevo valor
-
-    if (datosApp.solicitantes) {
-        let solicitanteObj = datosApp.solicitantes.find(s => s.nombre === nombreSolicitante || s.id === nombreSolicitante);
-        if (solicitanteObj) {
-            idSolicitanteFinal = solicitanteObj.id; // Convertimos a ID
-        }
-    }
-    //<-- V27.4.2
-
-    
-    // Mostramos estado de carga al usuario
-    const btnSubmit = document.getElementById("btnEnviarAdmin");
-    const textoOriginalBtn = btnSubmit.innerHTML;
-    btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando en base de datos...';
-    btnSubmit.disabled = true;
-
-    const payload = {
-        modo: "crear", // Si luego haces el modo editar admin, lo cambias dinámicamente
-        lugar: document.getElementById("admin_lugar").value,
-        tipo: document.getElementById("admin_tipo").value,
-        estado: document.getElementById("admin_estado").value,
-        descripcion_corta: document.getElementById("admin_descripcion_corta").value,
-        nota: document.getElementById("admin_nota").value,
-        parte: document.getElementById("admin_parte").value,
-        fecha_inicio: document.getElementById("admin_fecha_inicio").value,
-        fecha_fin: document.getElementById("admin_fecha_fin").value,
-        fecha_solicitud: document.getElementById("admin_fecha_solicitud").value, // Col T
-        equipo: document.getElementById("admin_equipo").value, 
-        usuario: usuarioAsignado,
-        companeros: stringCompaneros,
-        asignadoPor: usuarioValidado,
-        idOrigen: idUbicacionFinal, // Col Q (17)
-        idSolicitante: idSolicitanteFinal,  // Col R (18) v27.4.2 -> <-- ¡AÑADIR ESTE CAMPO!
-        etiquetas: stringEtiquetas, // Col S (19)
-        
-        // Imágenes
-        imagenBase64: img1 ? img1.base64 : "",
-        mimeType: img1 ? img1.mime : "",
-        nombreArchivo: img1 ? img1.nombre : "",
-        imagen2Base64: img2 ? img2.base64 : "",
-        mimeType2: img2 ? img2.mime : "",
-        nombreArchivo2: img2 ? img2.nombre : ""
-    };
-
-    //-> v27.3 comprobación por consola
-    try {
-        // 1. DEFINIMOS LA RUTA EXACTA AQUÍ PARA QUE NO HAYA PÉRDIDAS
-        const urlApi = "https://script.google.com/macros/s/AKfycby_FbRuRypDU8nfaPwoXMshpLGDhmqWrz9P88scCfU8tekKe6RHE4hirbkVX5s-5z4g/exec";
-        
-        // 2. HACEMOS EL ENVÍO A ESA RUTA (Sin el ?t=)
-        let respuesta = await fetch(urlApi, { 
-            method: "POST",
-            redirect: "follow", // <-- Asegura que el navegador siga a Google si cambia de ruta internamente
-            headers: {
-                "Content-Type": "text/plain;charset=utf-8",
-            },
-            body: JSON.stringify(payload)
-        });
-        
-        let textoCrudo = await respuesta.text(); 
-        
-        let resultado;
-        try {
-            resultado = JSON.parse(textoCrudo);
-        } catch (parseError) {
-            console.error("❌ Respuesta del servidor:", textoCrudo);
-            alert("Error interno en el backend. Revisa las ejecuciones en Apps Script.");
-            return;
-        }
-        
-        if (resultado.estado === "ok") {
-            alert("✅ Parte asignado y guardado correctamente.");
-            document.getElementById("formularioAdmin").reset();
-            navegarA('menu-section'); 
-        } else {
-            alert("❌ Error al guardar: " + resultado.error);
-        }
-    } catch (error) {
-        console.error("❌ Error real de conexión:", error);
-        alert("❌ Error de red o CORS al enviar el parte. Revisa la consola.");
-    } finally {
-        btnSubmit.innerHTML = textoOriginalBtn;
-        btnSubmit.disabled = false;
-    } //<-- v27.3 
-});
-//<--v27.3 - modificado para enviar al backend, si algo falla revisar código
-*/
+ */
 //** - FORMULARIO ADMIN V29 */
 //--> v29 - Formulario Admin Submit (Búsqueda robusta de IDs para Origen y Solicitante)
-document.getElementById("formularioAdmin").addEventListener("submit", async function(e) {
+/*document.getElementById("formularioAdmin").addEventListener("submit", async function(e) {
     e.preventDefault();
 
     // 1. Captura de Compañeros y Usuario Asignado
@@ -1772,7 +1590,182 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
         btnSubmit.innerHTML = textoOriginalBtn;
         btnSubmit.disabled = false;
     }
+});*)
+
+/* ================================================================
+   ⚡ v40 - SUBMIT FORMULARIO ADMIN (Asignación de Parte) - DEFINITIVA
+   Fusión del JS antiguo (obtenerIdReg, compañeros, imágenes async)
+   con el backend v32: envía TODOS los campos administrativos.
+   Correcciones clave respecto al antiguo:
+   - idOrigen se resuelve desde "admin_idOrigen" (NO desde ubicacion)
+   - Se añaden Col O (actuaciones [ALTA]) y Col S/T al payload
+   - Descripción corta: solo [etiquetaOrigen] [ubicacion], sin "|"
+   - Envío unificado vía enviarAlBackend (mismo flujo que el estándar)
+================================================================ */
+
+// Helper: extrae el ID exacto evitando fallos de mayúsculas/espacios
+// o formatos compuestos "Nombre - ID"
+const obtenerIdReg = (valorInput, lista) => {
+    if (!valorInput || !lista) return valorInput || "";
+    let textoLimpio = valorInput.trim().toLowerCase();
+
+    let encontrado = lista.find(item =>
+        (item.nombre && item.nombre.trim().toLowerCase() === textoLimpio) ||
+        (item.id && String(item.id).trim().toLowerCase() === textoLimpio)
+    );
+    if (encontrado) return encontrado.id;
+
+    if (valorInput.includes(" - ")) {
+        let partes = valorInput.split(" - ").map(p => p.trim().toLowerCase());
+        encontrado = lista.find(item =>
+            partes.includes((item.nombre || "").trim().toLowerCase()) ||
+            partes.includes(String(item.id || "").trim().toLowerCase())
+        );
+        if (encontrado) return encontrado.id;
+    }
+    return valorInput.trim(); // Registro manual nuevo: se devuelve tal cual
+};
+
+// Helper: lectura de imágenes a base64 (del antiguo, funciona bien)
+const leerImagenBase64 = (inputId) => {
+    return new Promise((resolve) => {
+        let input = document.getElementById(inputId);
+        if (input && input.files.length > 0) {
+            let reader = new FileReader();
+            reader.onload = () => resolve({
+                base64: reader.result.split(',')[1],
+                mime: input.files[0].type,
+                nombre: input.files[0].name
+            });
+            reader.readAsDataURL(input.files[0]);
+        } else {
+            resolve(null);
+        }
+    });
+};
+
+document.getElementById("formularioAdmin").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const btnSubmit = document.getElementById("btnEnviarAdmin");
+    const textoOriginalBtn = btnSubmit.innerHTML;
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+
+    try {
+
+        // --- 1. COMPAÑEROS Y USUARIO ASIGNADO (Col K = primer marcado) ---
+        let nodosCompaneros = Array.from(document.querySelectorAll("#admin_contenedorCompaneros .check-companero:checked"));
+        if (nodosCompaneros.length === 0) {
+            alert("Debes asignar al menos un compañero de equipo al parte.");
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = textoOriginalBtn;
+            return;
+        }
+        let stringCompaneros = nodosCompaneros.map(cb => cb.value).join(";");
+        let usuarioAsignado = nodosCompaneros[0].value; // Primer email como técnico principal
+
+        // --- 2. RESOLUCIÓN DE IDs (nombre del datalist -> Col A) ---
+        let idOrigenFinal = obtenerIdReg(document.getElementById("admin_idOrigen").value, datosApp.origenes);
+        let idSolicitanteFinal = obtenerIdReg(document.getElementById("admin_idSolicitante").value, datosApp.solicitantes);
+        let idEquipoFinal = obtenerIdReg(document.getElementById("admin_equipo").value, datosApp.equipos);
+
+        // Validación dura: no enviar texto sin resolver (evita 16/167 por defecto o basura)
+        const esIdValido = (valor, lista) => (lista || []).some(item => String(item.id) === String(valor));
+        if (!esIdValido(idOrigenFinal, datosApp.origenes)) {
+            alert("⚠️ El Origen escrito no coincide con ninguno de la hoja. Selecciónalo del desplegable.");
+            btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginalBtn; return;
+        }
+        if (!esIdValido(idSolicitanteFinal, datosApp.solicitantes)) {
+            alert("⚠️ El Solicitante escrito no coincide con ninguno de la hoja. Selecciónalo del desplegable.");
+            btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginalBtn; return;
+        }
+        if (!esIdValido(idEquipoFinal, datosApp.equipos)) {
+            alert("⚠️ El Equipo escrito no coincide con ninguno de la hoja. Selecciónalo del desplegable.");
+            btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginalBtn; return;
+        }
+
+        // --- 3. FECHAS Y CÁLCULO DE DÍAS ---
+        const fInicio = new Date(document.getElementById("admin_fecha_inicio").value);
+        const fFin = new Date(document.getElementById("admin_fecha_fin").value);
+        const dias = Math.ceil(Math.abs(fFin - fInicio) / (1000 * 60 * 60 * 24)) + 1;
+        const fechaHoy = new Date().toLocaleDateString('es-ES');
+
+        // --- 4. DESCRIPCIÓN CORTA SIMPLIFICADA (v40) ---
+        // Solo [etiqueta del Origen] y [Ubicación]. Fuera las etiquetas tras "|".
+        const origenObj = (datosApp.origenes || []).find(o => String(o.id) === String(idOrigenFinal));
+        const etiquetaOrigen = origenObj && origenObj.etiqueta ? origenObj.etiqueta : "";
+        const ubicacion = (document.getElementById("admin_ubicacion").value || "").trim();
+
+        let descripcionUsuario = document.getElementById("admin_descripcion_corta").value.trim();
+        if (!descripcionUsuario.startsWith("[")) {
+            const prefijos = [];
+            if (etiquetaOrigen) prefijos.push(`[${etiquetaOrigen}]`);
+            if (ubicacion) prefijos.push(`[${ubicacion}]`);
+            descripcionUsuario = (prefijos.length ? prefijos.join(" ") + " " : "") + descripcionUsuario;
+        }
+
+        // --- 5. TEXTO DEL PARTE con prefijo [fecha | días] ---
+        const textoParteAdmin = (document.getElementById("admin_parte").value || "").trim();
+        const textoParteFinal = textoParteAdmin
+            ? `[${fechaHoy} | ${dias} Días] - ${textoParteAdmin}`
+            : "";
+
+        // --- 6. ETIQUETAS / ACTUACIONES REQUERIDAS (Col S) ---
+        let stringEtiquetas = Array.from(document.querySelectorAll(".check-actuacion:checked"))
+            .map(cb => cb.value).join(";");
+
+        // --- 7. TRAZABILIDAD [ALTA] (Col O) ---
+        const ref = Math.random().toString(36).substring(2, 10);
+        let valActuaciones = `[ALTA] REF:${ref} | ${fechaHoy} | ${usuarioValidado}`;
+        if (textoParteFinal) valActuaciones += `\n  > ${textoParteFinal}`;
+
+        // --- 8. LECTURA DE IMÁGENES ---
+        let img1 = await leerImagenBase64("admin_imagen");
+        let img2 = await leerImagenBase64("admin_imagen2");
+
+        // --- 9. PAYLOAD COMPLETO (compatible backend v32) ---
+        const payload = {
+            modo: "crear",
+            lugar: document.getElementById("admin_lugar").value,
+            tipo: document.getElementById("admin_tipo").value,
+            estado: document.getElementById("admin_estado").value,
+            descripcion_corta: descripcionUsuario,
+            nota: document.getElementById("admin_nota").value || "",       // Col F
+            parte: textoParteFinal,
+            fecha_inicio: document.getElementById("admin_fecha_inicio").value,
+            fecha_fin: document.getElementById("admin_fecha_fin").value,
+            fecha_solicitud: document.getElementById("admin_fecha_solicitud").value, // Col T
+            equipo: idEquipoFinal,                                         // Col L (id resuelto)
+            usuario: usuarioAsignado,                                      // Col K (primer compañero)
+            companeros: stringCompaneros,                                  // Col N
+            asignadoPor: usuarioValidado,                                  // Col P
+            idOrigen: idOrigenFinal,                                       // Col Q (id resuelto)
+            idSolicitante: idSolicitanteFinal,                             // Col R (id resuelto)
+            etiquetas: stringEtiquetas,                                    // Col S
+            actuaciones: valActuaciones,                                   // Col O ([ALTA])
+
+            imagenBase64: img1 ? img1.base64 : "",
+            mimeType: img1 ? img1.mime : "",
+            nombreArchivo: img1 ? img1.nombre : "",
+            imagen2Base64: img2 ? img2.base64 : "",
+            mimeType2: img2 ? img2.mime : "",
+            nombreArchivo2: img2 ? img2.nombre : ""
+        };
+
+        // --- 10. ENVÍO UNIFICADO (mismo flujo que el formulario estándar) ---
+        await enviarAlBackend(payload, btnSubmit);
+
+    } catch (error) {
+        console.error("❌ Error en el submit admin:", error);
+        alert("❌ Error inesperado al preparar el parte. Revisa la consola.");
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = textoOriginalBtn;
+    }
 });
+/*<--v40*/
+
+
 
 /* ================================================================
    ⚡ v34 - INFORMACIÓN ADICIONAL INTERACTIVA
