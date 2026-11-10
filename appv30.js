@@ -1520,8 +1520,9 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
         // --- 2. RESOLUCIÓN DE IDs (nombre del datalist -> Col A) ---
         let idOrigenFinal = obtenerIdReg(document.getElementById("admin_idOrigen").value, datosApp.origenes);
         let idSolicitanteFinal = obtenerIdReg(document.getElementById("admin_idSolicitante").value, datosApp.solicitantes);
-        let idEquipoFinal = obtenerIdReg(document.getElementById("admin_equipo").value, datosApp.equipos);
-
+        // -> v40 registraba el id pero registramos el texto
+        // let idEquipoFinal = obtenerIdReg(document.getElementById("admin_equipo").value, datosApp.equipos);
+        let equipoTexto = (document.getElementById("admin_equipo").value || "").trim();
         // Validación dura: no enviar texto sin resolver (evita 16/167 por defecto o basura)
         const esIdValido = (valor, lista) => (lista || []).some(item => String(item.id) === String(valor));
         if (!esIdValido(idOrigenFinal, datosApp.origenes)) {
@@ -1532,7 +1533,16 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
             alert("⚠️ El Solicitante escrito no coincide con ninguno de la hoja. Selecciónalo del desplegable.");
             btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginalBtn; return;
         }
+        /* v40 no guardamos el id guardamos el texto mantengo por si hay que guardar el id en el futuro
         if (!esIdValido(idEquipoFinal, datosApp.equipos)) {
+            alert("⚠️ El Equipo escrito no coincide con ninguno de la hoja. Selecciónalo del desplegable.");
+            btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginalBtn; return;
+        }*/
+        //V40 -> registra el texto del equipo
+        const esEquipoValido = (datosApp.equipos || []).some(eq =>
+            String(eq.nombre || "").trim().toLowerCase() === equipoTexto.toLowerCase()
+        );
+        if (!esEquipoValido) {
             alert("⚠️ El Equipo escrito no coincide con ninguno de la hoja. Selecciónalo del desplegable.");
             btnSubmit.disabled = false; btnSubmit.innerHTML = textoOriginalBtn; return;
         }
@@ -1588,7 +1598,8 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
             fecha_inicio: document.getElementById("admin_fecha_inicio").value,
             fecha_fin: document.getElementById("admin_fecha_fin").value,
             fecha_solicitud: document.getElementById("admin_fecha_solicitud").value, // Col T
-            equipo: idEquipoFinal,                                         // Col L (id resuelto)
+            //equipo: idEquipoFinal,                                         // Col L (id resuelto)
+            equipo: equipoTexto,                                           // Col L (texto del equipo, como registra la BD)
             usuario: usuarioAsignado,                                      // Col K (primer compañero)
             companeros: stringCompaneros,                                  // Col N
             asignadoPor: usuarioValidado,                                  // Col P
