@@ -1374,7 +1374,7 @@ function configurarFiltroEquipos() {
     aplicarFiltro(); // Ejecutar al inicio
 }
 
-function automatizarTextosAdmin() {
+/*function automatizarTextosAdmin() {
     const inputOrigen = document.getElementById("admin_idOrigen");
     const inputUbicacion = document.getElementById("admin_ubicacion");
 
@@ -1429,8 +1429,31 @@ function automatizarTextosAdmin() {
     });
 }
 
-//v25 v27
+//v25 v27*/
+/* ⚡ v42: predictivo simplificado — solo antepone [Ubicación] a lo que
+   escriba el admin en la descripción corta. Nada más. */
+function automatizarTextosAdmin() {
+    const inputUbicacion = document.getElementById("admin_ubicacion");
+    const inputDescripcion = document.getElementById("admin_descripcion_corta");
+    let ultimoBloqueInicial = "";
 
+    const recalcularTextos = () => {
+        const ubicacionValor = inputUbicacion ? inputUbicacion.value.trim() : "";
+        const nuevoBloqueInicial = ubicacionValor ? `[${ubicacionValor}]` : "";
+
+        let textoManual = inputDescripcion.value || "";
+        if (ultimoBloqueInicial && textoManual.startsWith(ultimoBloqueInicial)) {
+            textoManual = textoManual.substring(ultimoBloqueInicial.length);
+        }
+        textoManual = textoManual.trim();
+        ultimoBloqueInicial = nuevoBloqueInicial;
+
+        inputDescripcion.value = [nuevoBloqueInicial, textoManual]
+            .filter(Boolean).join(" ").substring(0, 100);
+    };
+
+    if (inputUbicacion) inputUbicacion.addEventListener("input", recalcularTextos);
+}
 
 
 function abrirFormularioAdmin() {
@@ -1616,24 +1639,24 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
             nombreArchivo2: img2 ? img2.nombre : ""
         };
 
-        // --- 10. ENVÍO UNIFICADO (mismo flujo que el formulario estándar) ---
+        // --- 10. ENVÍO UNIFICADO ---
         await enviarAlBackend(payload, btnSubmit);
 
-        // --- 11. ⚡ v41: RESTAURAR BOTÓN + LIMPIEZA PROFUNDA ---
-        // enviarAlBackend hace el reset() básico, pero no restaura el botón
-        // ni limpia los elementos dinámicos:
-        btnSubmit.innerHTML = textoOriginalBtn;
-        btnSubmit.disabled = false;
+        // --- 11. ⚡ v42: RESTAURAR BOTÓN + LIMPIEZA PROFUNDA ---
+        // Red de seguridad: si enviarAlBackend no devuelve promesa, este código
+        // correría antes de que acabe el envío; el setTimeout lo cubre.
+        const restaurarBotonAdmin = () => {
+            btnSubmit.innerHTML = textoOriginalBtn;
+            btnSubmit.disabled = false;
+        };
+        restaurarBotonAdmin();
+        setTimeout(restaurarBotonAdmin, 2500); // vuelve a restaurar tras el envío real
 
-        // a) TomSelect no obedece al form.reset(): hay que vaciarlo a mano
+        // Limpieza de elementos dinámicos que form.reset() no toca
         const selLugarAdmin = document.getElementById("admin_lugar");
         if (selLugarAdmin && selLugarAdmin.tomselect) selLugarAdmin.tomselect.clear();
-
-        // b) Compañeros: son checks inyectados por JS -> vaciar contenedor
         const contCompAdmin = document.getElementById("admin_contenedorCompaneros");
         if (contCompAdmin) contCompAdmin.innerHTML = "";
-
-        // c) Actuaciones requeridas: desmarcar checks
         document.querySelectorAll("#admin_contenedor_actuaciones input[type='checkbox']")
             .forEach(c => c.checked = false);
 
