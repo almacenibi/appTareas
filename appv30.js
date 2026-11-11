@@ -1013,6 +1013,8 @@ document.getElementById("formularioTareas").addEventListener("submit", function(
 
 
 function enviarAlBackend(payload, btn) {
+    
+    const etiquetaOriginal = btn.innerHTML; // ⚡ v43: para restaurar el label correcto en errores
     fetch(API_URL, {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -1021,7 +1023,7 @@ function enviarAlBackend(payload, btn) {
     .then(response => response.json())
     .then(data => {
         if(data.estado === "ok") {
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sincronizando datos...';
+            //v43 -> btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sincronizando datos...';
             
             // Pedimos los datos frescos y ESPERAMOS a que lleguen (.then)
             cargarDatosDesdeAPI(false).then(() => {
@@ -1055,14 +1057,16 @@ function enviarAlBackend(payload, btn) {
         } else {
             alert("❌ Error al guardar en Sheets: " + data.error);
             btn.disabled = false;
-            btn.innerHTML = payload.modo === "editar" ? '<i class="bi bi-arrow-repeat"></i> Actualizar Parte' : '<i class="bi bi-send-check"></i> Enviar Parte';
+            //btn.innerHTML = payload.modo === "editar" ? '<i class="bi bi-arrow-repeat"></i> Actualizar Parte' : '<i class="bi bi-send-check"></i> Enviar Parte';
+            btn.innerHTML = etiquetaOriginal; // restaura el label del formulario que sea
         }
     })
     .catch(error => {
         console.error("Error en POST:", error);
         alert("⚠️ Error de red al enviar el parte. Revisa tu conexión.");
         btn.disabled = false;
-        btn.innerHTML = payload.modo === "editar" ? '<i class="bi bi-arrow-repeat"></i> Actualizar Parte' : '<i class="bi bi-send-check"></i> Enviar Parte';
+        //btn.innerHTML = payload.modo === "editar" ? '<i class="bi bi-arrow-repeat"></i> Actualizar Parte' : '<i class="bi bi-send-check"></i> Enviar Parte';
+        btn.innerHTML = etiquetaOriginal; // restaura el label del formulario que sea
     });
 }
 
@@ -1642,23 +1646,20 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
         // --- 10. ENVÍO UNIFICADO ---
         await enviarAlBackend(payload, btnSubmit);
 
-        // --- 11. ⚡ v42: RESTAURAR BOTÓN + LIMPIEZA PROFUNDA ---
-        // Red de seguridad: si enviarAlBackend no devuelve promesa, este código
-        // correría antes de que acabe el envío; el setTimeout lo cubre.
-        const restaurarBotonAdmin = () => {
-            btnSubmit.innerHTML = textoOriginalBtn;
-            btnSubmit.disabled = false;
-        };
-        restaurarBotonAdmin();
-        setTimeout(restaurarBotonAdmin, 2500); // vuelve a restaurar tras el envío real
+        // --- 11. RESTAURAR BOTÓN + LIMPIEZA PROFUNDA (v43) ---
+        // Ahora el await espera de verdad al envío: el botón se queda en
+        // "Sincronizando datos" durante todo el proceso y se restaura al final.
+        btnSubmit.innerHTML = textoOriginalBtn;
+        btnSubmit.disabled = false;
 
-        // Limpieza de elementos dinámicos que form.reset() no toca
         const selLugarAdmin = document.getElementById("admin_lugar");
         if (selLugarAdmin && selLugarAdmin.tomselect) selLugarAdmin.tomselect.clear();
         const contCompAdmin = document.getElementById("admin_contenedorCompaneros");
         if (contCompAdmin) contCompAdmin.innerHTML = "";
         document.querySelectorAll("#admin_contenedor_actuaciones input[type='checkbox']")
             .forEach(c => c.checked = false);
+        const hintDesc = document.getElementById("hint_descripcion_admin");
+        if (hintDesc) hintDesc.textContent = "";
 
     } catch (error) {
         console.error("❌ Error en el submit admin:", error);
