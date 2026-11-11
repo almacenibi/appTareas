@@ -1619,6 +1619,24 @@ document.getElementById("formularioAdmin").addEventListener("submit", async func
         // --- 10. ENVÍO UNIFICADO (mismo flujo que el formulario estándar) ---
         await enviarAlBackend(payload, btnSubmit);
 
+        // --- 11. ⚡ v41: RESTAURAR BOTÓN + LIMPIEZA PROFUNDA ---
+        // enviarAlBackend hace el reset() básico, pero no restaura el botón
+        // ni limpia los elementos dinámicos:
+        btnSubmit.innerHTML = textoOriginalBtn;
+        btnSubmit.disabled = false;
+
+        // a) TomSelect no obedece al form.reset(): hay que vaciarlo a mano
+        const selLugarAdmin = document.getElementById("admin_lugar");
+        if (selLugarAdmin && selLugarAdmin.tomselect) selLugarAdmin.tomselect.clear();
+
+        // b) Compañeros: son checks inyectados por JS -> vaciar contenedor
+        const contCompAdmin = document.getElementById("admin_contenedorCompaneros");
+        if (contCompAdmin) contCompAdmin.innerHTML = "";
+
+        // c) Actuaciones requeridas: desmarcar checks
+        document.querySelectorAll("#admin_contenedor_actuaciones input[type='checkbox']")
+            .forEach(c => c.checked = false);
+
     } catch (error) {
         console.error("❌ Error en el submit admin:", error);
         alert("❌ Error inesperado al preparar el parte. Revisa la consola.");
