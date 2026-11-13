@@ -1026,7 +1026,7 @@ function enviarAlBackend(payload, btn) {
             //v43 -> btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sincronizando datos...';
             
             // Pedimos los datos frescos y ESPERAMOS a que lleguen (.then)
-            cargarDatosDesdeAPI(false).then(() => {
+            return cargarDatosDesdeAPI(false).then(() => {
                 alert("✅ ¡Parte guardado correctamente!");
                 
                 // Limpiamos el formulario (sirve tanto para nuevos como para editados)
